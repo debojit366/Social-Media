@@ -8,7 +8,7 @@ connectDB()
 
 
 
-app.use("/api/vi/auth",authRoutes)
+app.use("/api/v1/auth",authRoutes)
 
 
 
