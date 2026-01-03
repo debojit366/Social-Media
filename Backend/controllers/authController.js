@@ -1,4 +1,4 @@
-import userModel from "../models/userModel.js";
+import User from "../models/userModel.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
@@ -16,7 +16,7 @@ export const registerController = async (req, res, next) => {
     }
 
     // 2. Check if user already exists
-    const existingUser = await userModel.findOne({ phoneNumber });
+    const existingUser = await User.findOne({ phoneNumber });
     if (existingUser) {
       return res.status(400).json({ success: false, message: "Phone number already registered!" });
     }
@@ -25,7 +25,7 @@ export const registerController = async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // 4. Create and save user
-    const newUser = new userModel({
+    const newUser = new User({
       firstName, lastName, dob, gender, phoneNumber,
       password: hashedPassword,
     });
@@ -60,7 +60,7 @@ export const loginController = async (req, res, next) => {
     }
 
     // 2. Find user in Database
-    const user = await userModel.findOne({ phoneNumber });
+    const user = await User.findOne({ phoneNumber });
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
