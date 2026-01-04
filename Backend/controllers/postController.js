@@ -76,6 +76,10 @@ const deletePost = async (req, res, next) => {
     next(err);
   }
 };
+/*
+@desc    Get a post by ID
+@route   GET /api/v1/posts/:id
+*/
 const getPost = async (req, res, next) => {
   try {
     const post = await Post.findById(req.params.id);
@@ -85,6 +89,10 @@ const getPost = async (req, res, next) => {
     next(err);
   }
 };
+/*
+@desc    Like a post
+@route   GET /api/v1/posts/:id/like
+*/
 const likePost = async (req, res, next) => {
   try {
     const post = await Post.findById(req.params.id);
