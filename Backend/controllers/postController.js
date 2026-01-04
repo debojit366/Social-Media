@@ -24,12 +24,18 @@ const createPost = async (req, res, next) => { // 'next' add kiya error ke liye
     next(err); // error middleware
   }
 };
+
+/*
+@desc    Update an existing post
+@route   PUT /api/v1/posts/:id
+*/ 
+
 const updatePost = async (req, res, next) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json("No post found");
 
-    if (post.userId === req.user.id) {
+    if (post.userId.toString() === req.user.id) {
       const updatedPost = await Post.findByIdAndUpdate(
         req.params.id,
         { $set: req.body }, //poori post ko delete karke naya mat banao, balki sirf wahi cheezein badlo jo req.body mein aayi hain.
