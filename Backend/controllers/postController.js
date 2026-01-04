@@ -85,4 +85,19 @@ const getPost = async (req, res, next) => {
     next(err);
   }
 };
-export {createPost, updatePost,deletePost,getPost};
+const likePost = async (req, res, next) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    // Check karo user ne pehle like kiya hai ya nahi
+    if (!post.likes.includes(req.user.id)) {
+      await post.updateOne({ $push: { likes: req.user.id } });
+      res.status(200).json("Post has been liked! ❤️");
+    } else {
+      await post.updateOne({ $pull: { likes: req.user.id } });
+      res.status(200).json("Post has been unliked!");
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+export {createPost, updatePost,deletePost,getPost,likePost};

@@ -1,5 +1,5 @@
 import express from "express";
-import { createPost,updatePost,deletePost,getPost } from "../controllers/postController.js";
+import { createPost,updatePost,deletePost,getPost, likePost } from "../controllers/postController.js";
 import  verifyToken  from "../middleware/verifyToken.js";
 
 const router = express.Router();
@@ -10,4 +10,5 @@ router.post("/", verifyToken, createPost);
 router.put("/:id", verifyToken, updatePost);    // Update ke liye PUT
 router.delete("/:id", verifyToken, deletePost); // Delete ke liye DELETE
 router.get("/:id", getPost);
+router.get("/:id/like",likePost)
 export default router;
