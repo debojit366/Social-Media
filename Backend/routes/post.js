@@ -10,5 +10,5 @@ router.post("/", verifyToken, createPost);
 router.put("/:id", verifyToken, updatePost);    // Update ke liye PUT
 router.delete("/:id", verifyToken, deletePost); // Delete ke liye DELETE
 router.get("/:id", getPost);
-router.get("/:id/like",likePost)
+router.put("/:id/like",verifyToken,likePost)
 export default router;

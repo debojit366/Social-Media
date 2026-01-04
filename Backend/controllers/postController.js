@@ -96,6 +96,9 @@ const getPost = async (req, res, next) => {
 const likePost = async (req, res, next) => {
   try {
     const post = await Post.findById(req.params.id);
+    if(!post){
+        return res.status(404).json("No post found");
+    }
     // Check karo user ne pehle like kiya hai ya nahi
     if (!post.likes.includes(req.user.id)) {
       await post.updateOne({ $push: { likes: req.user.id } });
