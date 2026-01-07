@@ -1,22 +1,25 @@
 import User from "../models/userModel.js";
 export const sendFollowRequest = async (req, res, next) => {
-  if (req.user.id === req.params.id) {
-    return res.status(403).json("You cannot send a request to yourself.");
-  }
-
   try {
-    const userToRequest = await User.findById(req.params.id);
+    const userToFollow = await User.findById(req.params.id);
     const currentUser = await User.findById(req.user.id);
-    if (userToRequest.followers.includes(req.user.id)) {
-      return res.status(400).json("You are already following this user.");
-    }
 
-    if (userToRequest.friendRequests.includes(req.user.id)) {
-      return res.status(400).json("Follow request already sent.");
+    if (userToFollow.isPrivate) {
+      if (!userToFollow.friendRequests.includes(req.user.id)) {
+        await userToFollow.updateOne({ $push: { friendRequests: req.user.id } });
+        res.status(200).json("Follow request sent!");
+      } else {
+        res.status(400).json("Request already pending!");
+      }
+    } else {
+      if (!userToFollow.followers.includes(req.user.id)) {
+        await userToFollow.updateOne({ $push: { followers: req.user.id } });
+        await currentUser.updateOne({ $push: { followings: req.params.id } });
+        res.status(200).json("Started following!");
+      } else {
+        res.status(400).json("Already following!");
+      }
     }
-
-    await userToRequest.updateOne({ $push: { friendRequests: req.user.id } });
-    res.status(200).json("Follow request has been sent successfully! 📩");
   } catch (err) {
     next(err);
   }
@@ -122,10 +125,23 @@ export const updateUser = async (req, res, next) => {
 
 export const getUserProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
-    if (!user) return res.status(404).json("User not found!");
+    const targetUser = await User.findById(req.params.id).select("-password");
+    if (!targetUser) return res.status(404).json("User not found!");
 
-    res.status(200).json(user);
+    const currentUserId = req.user.id;
+    const isFollower = targetUser.followers.includes(currentUserId);
+    const isOwnProfile = targetUser._id.toString() === currentUserId;
+
+    if (targetUser.isPrivate && !isFollower && !isOwnProfile) {
+      return res.status(200).json({
+        firstName: targetUser.firstName,
+        lastName: targetUser.lastName,
+        profilePicture: targetUser.profilePicture,
+        isPrivate: true,
+        message: "This account is private. Follow to see their photos and videos."
+      });
+    }
+    res.status(200).json(targetUser);
   } catch (err) {
     next(err);
   }

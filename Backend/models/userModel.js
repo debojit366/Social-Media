@@ -55,7 +55,11 @@ const UserSchema = new mongoose.Schema(
     friendRequests: {
     type: Array,
     default: [],
-    }
+    },
+    isPrivate: {
+    type: Boolean,
+    default: false,
+    },
   },
   { timestamps: true }
 );
