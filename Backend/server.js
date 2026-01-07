@@ -5,12 +5,13 @@ import authRoutes from './routes/auth.js'
 import postRoutes from './routes/post.js'
 import userRoutes from './routes/user.js'
 import errorMiddleware from './middleware/error.js'
+import testRoutes from './routes/test.js'
 const app = express()
 app.use(express.json())
 connectDB()
 
 
-
+app.use("/api/v1/test", testRoutes)
 app.use("/api/v1/auth",authRoutes)
 app.use("/api/v1/posts",postRoutes)
 app.use("/api/v1/users",userRoutes)
