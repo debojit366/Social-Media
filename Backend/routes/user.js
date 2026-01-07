@@ -2,20 +2,22 @@ import express from "express";
 import { 
   sendFollowRequest, 
   acceptFollowRequest, 
-  rejectFollowRequest 
+  rejectFollowRequest,
+  getPendingRequests
 } from "../controllers/userController.js";
 import verifyToken from "../middleware/verifyToken.js";
 
-// Initialize the router
 const router = express.Router();
 
-// Route to send a follow request
-router.put("/:id/request", verifyToken, sendFollowRequest);
+router.get("/requests/pending", verifyToken, getPendingRequests);
 
-// Route to accept a follow request
-router.put("/:id/accept", verifyToken, acceptFollowRequest);
+router.patch("/:id/request", verifyToken, sendFollowRequest);
+router.patch("/:id/accept", verifyToken, acceptFollowRequest);
+router.patch("/:id/reject", verifyToken, rejectFollowRequest);
+// Get any user's profile
+router.get("/find/:id", getUserProfile);
 
-// Route to reject/decline a follow request
-router.put("/:id/reject", verifyToken, rejectFollowRequest);
+// Update own profile
+router.patch("/update/:id", verifyToken, updateUser);
 
 export default router;

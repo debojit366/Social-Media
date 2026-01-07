@@ -1,5 +1,5 @@
+import User from "../models/userModel.js";
 export const sendFollowRequest = async (req, res, next) => {
-  // Prevent user from sending a request to themselves
   if (req.user.id === req.params.id) {
     return res.status(403).json("You cannot send a request to yourself.");
   }
@@ -7,17 +7,14 @@ export const sendFollowRequest = async (req, res, next) => {
   try {
     const userToRequest = await User.findById(req.params.id);
     const currentUser = await User.findById(req.user.id);
-    // Check if they are already followers
     if (userToRequest.followers.includes(req.user.id)) {
       return res.status(400).json("You are already following this user.");
     }
 
-    // Check if a request is already pending
     if (userToRequest.friendRequests.includes(req.user.id)) {
       return res.status(400).json("Follow request already sent.");
     }
 
-    // Push current user's ID into the target user's pending requests
     await userToRequest.updateOne({ $push: { friendRequests: req.user.id } });
     res.status(200).json("Follow request has been sent successfully! 📩");
   } catch (err) {
@@ -29,19 +26,15 @@ export const sendFollowRequest = async (req, res, next) => {
 
 export const acceptFollowRequest = async (req, res, next) => {
   try {
-    const currentUser = await User.findById(req.user.id); // The one accepting
-    const requesterUser = await User.findById(req.params.id); // The one who sent the request
+    const currentUser = await User.findById(req.user.id);
+    const requesterUser = await User.findById(req.params.id);
 
-    // Check if the request actually exists in the array
     if (currentUser.friendRequests.includes(req.params.id)) {
       
-      // 1. Add requester to current user's followers
       await currentUser.updateOne({ $push: { followers: req.params.id } });
       
-      // 2. Add current user to requester's followings
       await requesterUser.updateOne({ $push: { followings: req.user.id } });
       
-      // 3. Remove the ID from pending friendRequests
       await currentUser.updateOne({ $pull: { friendRequests: req.params.id } });
 
       res.status(200).json("Request accepted! You are now friends. 🤝");
@@ -62,7 +55,6 @@ export const rejectFollowRequest = async (req, res, next) => {
   try {
     const currentUser = await User.findById(req.user.id);
     
-    // Just remove the ID from the friendRequests array
     await currentUser.updateOne({ $pull: { friendRequests: req.params.id } });
     
     res.status(200).json("Follow request declined.");
@@ -74,15 +66,66 @@ export const getPendingRequests = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
     
-    // Use Promise.all to fetch details of all users who sent requests
-    const list = await Promise.all(
-      user.friendRequests.map((id) => {
-        // We only fetch needed fields like name and profile pic for better performance
-        return User.findById(id).select("firstName lastName profilePicture");
-      })
-    );
+    const pendingUsers = await User.find({
+      _id: { $in: user.friendRequests }
+    }).select("firstName lastName profilePicture");
 
-    res.status(200).json(list);
+    const formattedList = pendingUsers.map((u) => {
+      return {
+        id: u._id,
+        fullName: `${u.firstName} ${u.lastName}`,
+        profilePic: u.profilePicture || "default.png"
+      };
+    });
+
+    res.status(200).json(formattedList);
+  } catch (err) {
+    next(err);
+  }
+};
+/*
+@desc    Update user profile
+@route    /api/v1/users/update/:id
+*/
+
+
+export const updateUser = async (req, res, next) => {
+  
+  if (req.params.id === req.user.id.toString()) {
+    try {
+      if(req.body.password){
+        req.body.password = await bcrypt.hash(req.body.password, 10);
+      }
+      const updatedUser = await User.findByIdAndUpdate(
+        req.params.id,
+        {
+          $set: req.body,
+        },
+        { new: true }
+      ).select("-password");
+
+      res.status(200).json(updatedUser);
+    } catch (err) {
+      next(err);
+    }
+  } else {
+    return res.status(403).json("You can only update your own account!");
+  }
+};
+
+
+/*
+@desc    get user profile
+@route   PUT /api/v1/users/find/:id
+*/
+
+
+export const getUserProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password");
+    if (!user) return res.status(404).json("User not found!");
+
+    res.status(200).json(user);
   } catch (err) {
     next(err);
   }
