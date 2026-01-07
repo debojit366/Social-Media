@@ -1,4 +1,6 @@
 import User from "../models/userModel.js";
+import fs from "fs";
+import {handleUpload,deleteFromCloudinary} from "../config/cloudinary.js";
 export const sendFollowRequest = async (req, res, next) => {
   try {
     const userToFollow = await User.findById(req.params.id);
@@ -93,12 +95,34 @@ export const getPendingRequests = async (req, res, next) => {
 
 
 export const updateUser = async (req, res, next) => {
-  
+
   if (req.params.id === req.user.id.toString()) {
+
     try {
-      if(req.body.password){
+      if (req.body.password) {
         req.body.password = await bcrypt.hash(req.body.password, 10);
       }
+
+      if (req.file) {
+        
+        const currentUser = await User.findById(req.params.id);
+
+        if (currentUser.cloudinaryId) {
+          await deleteFromCloudinary(currentUser.cloudinaryId);
+        }
+
+        const result = await handleUpload(req.file.path);
+
+        req.body.profilePicture = result.secure_url;
+        req.body.cloudinaryId = result.public_id;
+
+        if(req.file && req.file.path){
+          if (fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+          }
+        }
+      }
+
       const updatedUser = await User.findByIdAndUpdate(
         req.params.id,
         {
@@ -109,6 +133,7 @@ export const updateUser = async (req, res, next) => {
 
       res.status(200).json(updatedUser);
     } catch (err) {
+      if (req.file) fs.unlinkSync(req.file.path);
       next(err);
     }
   } else {
@@ -146,3 +171,5 @@ export const getUserProfile = async (req, res, next) => {
     next(err);
   }
 };
+
+

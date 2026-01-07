@@ -16,3 +16,6 @@ export const handleUpload = async (filePath) => {
     folder: "social_media_app"
   });
 };
+export const deleteFromCloudinary = async (publicId) => {
+  return await cloudinary.uploader.destroy(publicId);
+};

@@ -60,6 +60,10 @@ const UserSchema = new mongoose.Schema(
     type: Boolean,
     default: false,
     },
+    cloudinaryId: {
+    type: String,
+    default: ""
+  }
   },
   { timestamps: true }
 );
