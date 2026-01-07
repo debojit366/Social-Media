@@ -1,24 +1,32 @@
 import Post from "../models/postModel.js";
+import { handleUpload, deleteFromCloudinary } from "../config/cloudinary.js";
+import fs from "fs";
 /*
 @desc    Create a new post
 @route   POST /api/v1/posts/
 */
 const createPost = async (req, res, next) => {
   try {
+    let imageData = {};
+
+    if (req.file) {
+      const result = await handleUpload(req.file.path);
+      imageData.img = result.secure_url;
+      imageData.cloudinaryId = result.public_id;
+
+      fs.unlinkSync(req.file.path);
+    }
+
     const newPost = new Post({
-      ...req.body, 
+      ...req.body,
+      ...imageData,
       userId: req.user.id
     });
 
     const savedPost = await newPost.save();
-    
-    res.status(200).json({
-        success: true,
-        message: "Post created successfully",
-        post: savedPost
-    });
-  } 
-  catch (err) {
+    res.status(200).json({ success: true, post: savedPost });
+  } catch (err) {
+    if (req.file) fs.unlinkSync(req.file.path);
     next(err);
   }
 };
@@ -33,24 +41,44 @@ const updatePost = async (req, res, next) => {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json("No post found");
 
-    if (post.userId.toString() === req.user.id) {
-      const updatedPost = await Post.findByIdAndUpdate(
-        req.params.id,
-        { $set: req.body },
-        { new: true }
-      );
-      res.status(200).json({
-          success: true,
-          message: "post updated successfully",
-          updatedPost
-      });
-    } else {
-      res.status(403).json("unauthorized action");
+    if (post.userId.toString() !== req.user.id) {
+      return res.status(403).json("Unauthorized action");
     }
+
+    let updateData = {
+      description: req.body.description,
+    };
+
+    if (req.file) {
+      if (post.cloudinaryId) {
+        await deleteFromCloudinary(post.cloudinaryId);
+      }
+      const result = await handleUpload(req.file.path);
+      updateData.img = result.secure_url;
+      updateData.cloudinaryId = result.public_id;
+
+      fs.unlinkSync(req.file.path);
+    }
+
+    const updatedPost = await Post.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateData }, 
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Post updated!",
+      updatedPost
+    });
+
   } catch (err) {
+    if (req.file) fs.unlinkSync(req.file.path);
     next(err);
   }
 };
+
+
 /*
 @desc    Delete an existing post
 @route   DELETE /api/v1/posts/:id
