@@ -14,7 +14,10 @@ export const addComment = async (req, res) => {
       user: req.user.id
     });
 
-    const savedComment = await newComment.save();
+    let savedComment = await newComment.save();
+
+
+    savedComment = await savedComment.populate("user", "username profilePicture");
 
     await Post.findByIdAndUpdate(postId, {
       $push: { comments: savedComment._id } 
@@ -33,6 +36,43 @@ export const getPostComments = async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.status(200).json(comments);
+  } catch (err) {
+    res.status(500).json(err.message);
+  }
+};
+
+
+export const deleteComment = async (req, res) => {
+  try {
+    const commentId = req.params.id;
+    const userId = req.user.id;
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) return res.status(404).json("Comment does not exist");
+
+    const post = await Post.findById(comment.post);
+    if (!post) return res.status(404).json("Associated post not found");
+
+    const isCommentOwner = comment.user.toString() === userId;
+    const isPostOwner = post.userId.toString() === userId;
+
+    if (isCommentOwner || isPostOwner) {
+      await Comment.findByIdAndDelete(commentId);
+
+      await Post.findByIdAndUpdate(comment.post, {
+        $pull: { comments: commentId }
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: isPostOwner && !isCommentOwner 
+          ? "Post owner deleted this comment" 
+          : "Comment deleted successfully"
+      });
+    } else {
+      return res.status(403).json("You are not authorized to delete this comment");
+    }
+
   } catch (err) {
     res.status(500).json(err.message);
   }
