@@ -4,14 +4,14 @@ const UserSchema = new mongoose.Schema(
     firstName: {
       type: String,
       required: true,
-      min: 2,
-      max: 30,
+      minlength: 2,
+      maxlength: 30,
     },
     lastName: {
       type: String,
       required: true,
-      min: 2,
-      max: 30,
+      minlength: 2,
+      maxlength: 30,
     },
     dob: {
       type: Date,
@@ -26,11 +26,14 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      minlength: 10,
+      maxlength: 10,
+      match: [/^[0-9]+$/, 'Please fill a valid phone number' ],
     },
     password: {
       type: String,
       required: true,
-      min: 6,
+      minlength: 6,
     },
     profilePicture: {
       type: String,
