@@ -168,4 +168,25 @@ export const getUserProfilePosts = async (req, res) => {
     res.status(500).json({ message: "error while finding posts", error: error.message });
   }
 };
+
+
+
+
+
+export const getTimelinePosts = async (req, res) => {
+  try {
+    const currentUser = await User.findById(req.user.id);
+    
+    const allIds = [currentUser._id, ...currentUser.followings];
+
+    const timelinePosts = await Post.find({ userId: { $in: allIds } })
+  .populate("userId", "firstName lastName profilePicture")
+  .sort({ createdAt: -1 });
+
+    res.status(200).json(timelinePosts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Timeline fetch fail ho gayi" });
+  }
+};
 export {createPost, updatePost,deletePost,getPost,likePost};
