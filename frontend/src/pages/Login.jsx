@@ -25,7 +25,8 @@ const Login = () => {
       const response = await axios.post('http://localhost:8080/api/v1/auth/login', formData);
       if (response.data) {
         localStorage.setItem("profile", JSON.stringify(response.data.user));
-        // console.log("Login successful:", response.data);
+        localStorage.setItem("token",response.data.token)
+        console.log("Login successful:", response);
         navigate("/"); 
         window.location.reload(); 
       }

@@ -8,7 +8,9 @@ const Profile = () => {
   const [userPosts, setUserPosts] = useState([]);
   const [newPost, setNewPost] = useState("");
   
-  const currentUser = JSON.parse(localStorage.getItem("profile"));
+const currentUser = JSON.parse(localStorage.getItem("profile"));
+const token = localStorage.getItem("token");
+
 
   useEffect(() => {
     setUser(currentUser);
@@ -27,16 +29,22 @@ const Profile = () => {
   const handlePostSubmit = async (e) => {
     e.preventDefault();
     if (!newPost.trim()) return;
-
+    const config = {
+        headers: { 
+            'Authorization': `Bearer ${token}`
+        }
+    }
+    const postData = {
+        description: newPost
+    }
     try {
-      await axios.post("http://localhost:8080/api/v1/posts", {
-        userId: currentUser._id,
-        desc: newPost
-      });
+      const res = await axios.post("http://localhost:8080/api/v1/posts/",postData,config);
+      console.log(res);
       setNewPost("");
       fetchUserPosts();
     } catch (err) {
-      alert("Post nahi ho paya, bhai!");
+      alert("unable to create post");
+      console.log(err);
     }
   };
 
@@ -119,7 +127,7 @@ const Profile = () => {
                   userPosts.map((post) => <PostCard key={post._id} post={post} />)
                 ) : (
                   <div className="bg-white p-12 rounded-[2rem] text-center border-2 border-dashed border-gray-100">
-                    <p className="text-gray-400 font-bold">No posts yet, Bhai!</p>
+                    <p className="text-gray-400 font-bold">No posts yet</p>
                   </div>
                 )}
               </div>
