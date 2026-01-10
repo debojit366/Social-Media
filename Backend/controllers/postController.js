@@ -147,17 +147,20 @@ const likePost = async (req, res, next) => {
     next(err);
   }
 };
-
+/* 
+@desc    Get user profile posts
+@route   GET /api/v1/posts/user-posts
+*/
 export const getUserProfilePosts = async (req, res) => {
   try {
-    const { userId } = req.params;
-
-    const posts = await Post.find({ userId: userId })
+    const posts = await Post.find({ userId: req.user.id })
       .populate("userId", "firstName lastName profilePicture")
       .sort({ createdAt: -1 });
 
     if (!posts || posts.length === 0) {
-      return res.status(200).json({ message: "no posts found" });
+      return res.status(200).json({ 
+        message: "no posts found",
+       });
     }
 
     res.status(200).json(posts);

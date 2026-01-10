@@ -20,7 +20,7 @@ const PostCard = ({ post }) => {
         </button>
       </div>
       <div className="px-5 pb-3">
-        <p className="text-gray-700 leading-relaxed">{post.desc}</p>
+        <p className="text-gray-700 leading-relaxed">{post.description}</p>
       </div>
       {post.img && (
         <div className="px-2">

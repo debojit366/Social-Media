@@ -10,16 +10,21 @@ const Profile = () => {
   
 const currentUser = JSON.parse(localStorage.getItem("profile"));
 const token = localStorage.getItem("token");
-
+const config = {
+    headers: { 
+        'Authorization': `Bearer ${token}`
+    }
+}
 
   useEffect(() => {
-    setUser(currentUser);
     fetchUserPosts();
+    setUser(currentUser);
   }, []);
 
   const fetchUserPosts = async () => {
     try {
-      const res = await axios.get(`http://localhost:8080/api/v1/posts/user-posts/${currentUser._id}`);
+      const res = await axios.get(`http://localhost:8080/api/v1/posts/user-posts`,config);
+    //   console.log(res.data);
       setUserPosts(res.data);
     } catch (err) {
       console.log("Error fetching posts", err);
@@ -29,11 +34,6 @@ const token = localStorage.getItem("token");
   const handlePostSubmit = async (e) => {
     e.preventDefault();
     if (!newPost.trim()) return;
-    const config = {
-        headers: { 
-            'Authorization': `Bearer ${token}`
-        }
-    }
     const postData = {
         description: newPost
     }
