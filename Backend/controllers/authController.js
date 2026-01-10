@@ -8,21 +8,31 @@ import jwt from "jsonwebtoken";
  */
 export const registerController = async (req, res, next) => {
   try {
-    const { firstName, lastName, dob, gender, phoneNumber, password } = req.body;
+    const { firstName, lastName, dob, gender, phoneNumber, password, username } = req.body;
 
-    if (!firstName || !lastName || !dob || !gender || !phoneNumber || !password) {
+    if (!firstName || !lastName || !dob || !gender || !phoneNumber || !password || !username) {
       return res.status(400).json({ success: false, message: "All fields are required!" });
     }
 
-    const existingUser = await User.findOne({ phoneNumber });
+    
+    const existingUser = await User.findOne({ 
+      $or: [{ phoneNumber }, { username }] 
+    });
+
     if (existingUser) {
-      return res.status(400).json({ success: false, message: "Phone number already registered!" });
+      const field = existingUser.phoneNumber === phoneNumber ? "Phone number" : "Username";
+      return res.status(400).json({ success: false, message: `${field} already registered!` });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
-      firstName, lastName, dob, gender, phoneNumber,
+      firstName, 
+      lastName, 
+      dob, 
+      gender, 
+      phoneNumber,
+      username,
       password: hashedPassword,
     });
 

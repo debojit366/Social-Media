@@ -13,6 +13,14 @@ const UserSchema = new mongoose.Schema(
       minlength: 2,
       maxlength: 30,
     },
+    username:{
+      type: String,
+      required: true,
+      unique: true,
+      trim:true,
+      minlength:3,
+      maxlength:30,
+    },
     dob: {
       type: Date,
       required: true,
@@ -63,10 +71,15 @@ const UserSchema = new mongoose.Schema(
     type: Boolean,
     default: false,
     },
+    bio: {
+      type: String,
+      maxlength: 160,
+      default: "",
+    },
     cloudinaryId: {
     type: String,
     default: ""
-  }
+  },
   },
   { timestamps: true }
 );

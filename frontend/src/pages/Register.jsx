@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, AtSign } from 'lucide-react';
 
 const Register = () => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    username: '',
     dob: '',
     gender: '',
     phoneNumber: '',
@@ -19,8 +20,11 @@ const Register = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === "phoneNumber") {
-      if (!/^\d*$/.test(value) || value.length > 10) return;
+    
+    if (name === "username") {
+      const formattedValue = value.toLowerCase();
+      setFormData({ ...formData, [name]: formattedValue });
+      return;
     }
     setFormData({ ...formData, [name]: value });
   };
@@ -69,15 +73,32 @@ const Register = () => {
                 <input name="lastName" type="text" required value={formData.lastName} onChange={handleChange} placeholder="Sharma" className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-gray-300" />
               </div>
             </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Username</label>
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                   <AtSign size={16} />
+                </div>
+                <input 
+                  name="username" 
+                  type="text" 
+                  required 
+                  value={formData.username} 
+                  onChange={handleChange} 
+                  placeholder="amansharma_01" 
+                  className="w-full pl-12 pr-5 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-gray-300" 
+                />
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Birthday</label>
-                <input name="dob" type="date" required onChange={handleChange} className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-400" />
+                <input name="dob" type="date" required value={formData.dob} onChange={handleChange} className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-400" />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Gender</label>
-                <select name="gender" required onChange={handleChange} className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-400 appearance-none">
+                <select name="gender" required value={formData.gender} onChange={handleChange} className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-400 appearance-none">
                   <option value="">Select</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>

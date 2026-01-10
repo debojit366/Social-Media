@@ -11,7 +11,11 @@ const app = express()
 app.use(express.json())
 connectDB()
 
-app.use(cors())
+app.use(cors({
+  origin: "http://localhost:5173",
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  credentials: true
+}));
 app.use("/api/v1/test", testRoutes)
 app.use("/api/v1/auth",authRoutes)
 app.use("/api/v1/posts",postRoutes)

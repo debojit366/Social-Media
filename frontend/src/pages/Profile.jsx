@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { MapPin, Calendar, Edit3, Image as ImageIcon, Send } from 'lucide-react';
 import PostCard from '../components/PostCard';
+import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
   const [user, setUser] = useState({});
   const [userPosts, setUserPosts] = useState([]);
   const [newPost, setNewPost] = useState("");
-  
+  const navigate = useNavigate();
 const currentUser = JSON.parse(localStorage.getItem("profile"));
 const token = localStorage.getItem("token");
 const config = {
@@ -67,9 +68,9 @@ const config = {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
                 <h1 className="text-3xl font-black text-gray-900">{user.firstName} {user.lastName}</h1>
-                <p className="text-gray-400 font-medium">@ {user.firstName?.toLowerCase()}</p>
+                <p className="text-gray-400 font-medium">@ {user.username}</p>
               </div>
-              <button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-100">
+              <button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-100" onClick={()=> navigate('/edit-profile')}>
                 <Edit3 size={18}/> Edit Profile
               </button>
             </div>
@@ -81,7 +82,7 @@ const config = {
             <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-white">
               <h3 className="font-black text-gray-900 mb-4">About</h3>
               <p className="text-gray-500 text-sm leading-relaxed font-medium">
-                This is my official Connectify profile.
+                {user.bio ? user.bio : "Tell us about Yourself"}
               </p>
             </div>
           </div>

@@ -95,49 +95,63 @@ export const getPendingRequests = async (req, res, next) => {
 
 
 export const updateUser = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-  if (req.params.id === req.user.id.toString()) {
-
-    try {
-      if (req.body.password) {
-        req.body.password = await bcrypt.hash(req.body.password, 10);
-      }
-
-      if (req.file) {
-        
-        const currentUser = await User.findById(req.params.id);
-
-        if (currentUser.cloudinaryId) {
-          await deleteFromCloudinary(currentUser.cloudinaryId);
-        }
-
-        const result = await handleUpload(req.file.path);
-
-        req.body.profilePicture = result.secure_url;
-        req.body.cloudinaryId = result.public_id;
-
-        if(req.file && req.file.path){
-          if (fs.existsSync(req.file.path)) {
-            fs.unlinkSync(req.file.path);
-          }
-        }
-      }
-
-      const updatedUser = await User.findByIdAndUpdate(
-        req.params.id,
-        {
-          $set: req.body,
-        },
-        { new: true }
-      ).select("-password");
-
-      res.status(200).json(updatedUser);
-    } catch (err) {
-      if (req.file) fs.unlinkSync(req.file.path);
-      next(err);
+    if (req.body.password) {
+      req.body.password = await bcrypt.hash(req.body.password, 10);
     }
-  } else {
-    return res.status(403).json("You can only update your own account!");
+
+    const currentUser = await User.findById(userId);
+    if (!currentUser) return res.status(404).json({ message: "User not found!" });
+
+    if (req.files && req.files.image) {
+      const profileFile = req.files.image[0];
+      
+      if (currentUser.cloudinaryId) {
+        await deleteFromCloudinary(currentUser.cloudinaryId);
+      }
+
+      const result = await handleUpload(profileFile.path);
+      req.body.profilePicture = result.secure_url;
+      req.body.cloudinaryId = result.public_id;
+
+      if (fs.existsSync(profileFile.path)) fs.unlinkSync(profileFile.path);
+    }
+
+    if (req.files && req.files.coverImage) {
+      const coverFile = req.files.coverImage[0];
+      
+      if (currentUser.coverCloudinaryId) {
+        await deleteFromCloudinary(currentUser.coverCloudinaryId);
+      }
+
+      const result = await handleUpload(coverFile.path);
+      req.body.coverPicture = result.secure_url;
+      req.body.coverCloudinaryId = result.public_id; 
+
+      if (fs.existsSync(coverFile.path)) fs.unlinkSync(coverFile.path);
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: req.body },
+      { new: true }
+    ).select("-password");
+
+    res.status(200).json(updatedUser);
+
+  } catch (err) {
+    if (req.files) {
+      Object.values(req.files).forEach(fileArr => {
+        fileArr.forEach(file => {
+          if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        });
+      });
+    }
+    console.error("Backend Error:", err);
+    next(err);
   }
 };
 
