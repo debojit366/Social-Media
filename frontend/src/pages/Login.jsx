@@ -20,14 +20,12 @@ const Login = () => {
     e.preventDefault();
     setError("");
 
-    if (formData.phoneNumber.length < 10) {
-      return setError("Bhai, valid 10-digit phone number dalo!");
-    }
 
     try {
       const response = await axios.post('http://localhost:8080/api/v1/auth/login', formData);
       if (response.data) {
-        localStorage.setItem("profile", JSON.stringify(response.data));
+        localStorage.setItem("profile", JSON.stringify(response.data.user));
+        // console.log("Login successful:", response.data);
         navigate("/"); 
         window.location.reload(); 
       }

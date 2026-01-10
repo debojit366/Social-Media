@@ -147,4 +147,22 @@ const likePost = async (req, res, next) => {
     next(err);
   }
 };
+
+export const getUserProfilePosts = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const posts = await Post.find({ userId: userId })
+      .populate("userId", "firstName lastName profilePicture")
+      .sort({ createdAt: -1 });
+
+    if (!posts || posts.length === 0) {
+      return res.status(200).json({ message: "no posts found" });
+    }
+
+    res.status(200).json(posts);
+  } catch (error) {
+    res.status(500).json({ message: "error while finding posts", error: error.message });
+  }
+};
 export {createPost, updatePost,deletePost,getPost,likePost};

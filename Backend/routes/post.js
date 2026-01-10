@@ -1,5 +1,5 @@
 import express from "express";
-import { createPost, updatePost, deletePost, getPost, likePost } from "../controllers/postController.js";
+import { createPost, updatePost, deletePost, getPost, likePost,getUserProfilePosts } from "../controllers/postController.js";
 import verifyToken from "../middleware/verifyToken.js";
 import { upload } from "../config/cloudinary.js";
 
@@ -11,5 +11,5 @@ router.put("/:id", verifyToken,upload.single("img"), updatePost);
 router.delete("/:id", verifyToken, deletePost);
 router.get("/:id", getPost);
 router.put("/:id/like", verifyToken, likePost);
-
+router.get("/user-posts/:userId", getUserProfilePosts);
 export default router;
