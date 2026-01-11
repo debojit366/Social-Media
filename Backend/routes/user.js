@@ -19,7 +19,7 @@ router.patch(
   updateUser
 );
 router.get("/requests/pending", verifyToken, getPendingRequests);
-
+router.get("/search", verifyToken, searchUsers);
 router.patch("/:id/request", verifyToken, sendFollowRequest);
 router.patch("/:id/accept", verifyToken, acceptFollowRequest);
 router.patch("/:id/reject", verifyToken, rejectFollowRequest);
