@@ -186,4 +186,20 @@ export const getUserProfile = async (req, res, next) => {
   }
 };
 
+export const searchUsers = async (req, res) => {
+  const query = req.query.q;
+  try {
+    const users = await User.find({
+      $or: [
+        { firstName: { $regex: query, $options: "i" } },
+        { username: { $regex: query, $options: "i" } }
+      ]
+    }).select("firstName lastName username profilePicture");
+
+    res.status(200).json(users);
+  } catch (err) {
+    res.status(500).json({ message: "Search failed", error: err });
+  }
+};
+
 

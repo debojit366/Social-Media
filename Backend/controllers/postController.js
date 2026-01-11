@@ -186,7 +186,7 @@ export const getTimelinePosts = async (req, res) => {
     res.status(200).json(timelinePosts);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Timeline fetch fail ho gayi" });
+    res.status(500).json({ message: "Timeline fetch failed" });
   }
 };
 export {createPost, updatePost,deletePost,getPost,likePost};
