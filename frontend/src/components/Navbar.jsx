@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, 
   Search, 
   MessageCircle, 
   User, 
   LogOut,
-  Bell
+  Bell,
+  Settings
 } from 'lucide-react';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
 
   const profileData = localStorage.getItem("profile");
@@ -18,6 +20,7 @@ const Navbar = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("profile");
+    localStorage.removeItem("token");
     navigate("/login");
     window.location.reload();
   };
@@ -38,6 +41,7 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4">
       <div className="max-w-7xl mx-auto h-16 flex items-center justify-between">
         
+        {/* LOGO */}
         <Link to="/" className="flex items-center gap-2 group">
           <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200 group-hover:scale-105 transition-transform">
             <span className="text-white font-black text-xl">C</span>
@@ -45,6 +49,7 @@ const Navbar = () => {
           <span className="text-xl font-black text-gray-900 hidden sm:block tracking-tight">Connectify</span>
         </Link>
 
+        {/* SEARCH BAR */}
         <form onSubmit={handleSearch} className="hidden md:flex items-center bg-gray-100 px-4 py-2 rounded-2xl w-full max-w-md mx-8 group focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-100 transition-all border border-transparent">
           <Search size={18} className="text-gray-400 group-focus-within:text-indigo-600" />
           <input 
@@ -56,6 +61,7 @@ const Navbar = () => {
           />
         </form>
 
+        {/* NAV ACTIONS */}
         <div className="flex items-center gap-2 sm:gap-4">
           
           <NavLink to="/" className={navBtnClass} title="Timeline" end>
@@ -73,8 +79,14 @@ const Navbar = () => {
             <Bell size={24} />
           </button>
 
+          {/* SETTINGS BUTTON */}
+          <NavLink to="/settings" className={navBtnClass} title="Settings">
+            <Settings size={24} />
+          </NavLink>
+
           <div className="w-[1px] h-8 bg-gray-100 mx-2 hidden sm:block"></div>
 
+          {/* USER PROFILE & LOGOUT */}
           <div className="flex items-center gap-3">
             <NavLink 
               to={`/profile/${currentUser?._id}`} 
@@ -92,7 +104,7 @@ const Navbar = () => {
                 )}
               </div>
               <span className={`text-sm font-bold hidden lg:block uppercase tracking-tight ${
-                location.pathname === '/profile' ? 'text-indigo-600' : 'text-gray-700'
+                location.pathname.includes('/profile') ? 'text-indigo-600' : 'text-gray-700'
               }`}>
                 {currentUser?.firstName || "Profile"}
               </span>
