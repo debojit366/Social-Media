@@ -77,7 +77,7 @@ const Navbar = () => {
 
           <div className="flex items-center gap-3">
             <NavLink 
-              to="/profile" 
+              to={`/profile/${currentUser?._id}`} 
               className={({ isActive }) => 
                 `flex items-center gap-2 p-1 pr-3 rounded-2xl transition-all border ${
                   isActive ? 'bg-indigo-50 border-indigo-100 shadow-sm' : 'hover:bg-gray-50 border-transparent'
