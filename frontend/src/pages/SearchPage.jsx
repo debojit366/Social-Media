@@ -28,6 +28,7 @@ useEffect(() => {
       });
 
       setResults(res.data);
+      // console.log(res.data);
     } catch (err) {
 
       console.log("Search error info:", err.response?.data);
