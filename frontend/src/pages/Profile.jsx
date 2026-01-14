@@ -30,8 +30,9 @@ const Profile = () => {
   try {
     const res = await axios.patch(`http://localhost:8080/api/v1/users/${user._id}/request`, {}, config);
     
-    fetchProfileData();
-    console.log("Follow toggle response:", res.data);
+    
+    fetchProfileData(false); 
+    
   } catch (err) {
     console.log("Follow error:", err);
   }
@@ -41,19 +42,20 @@ const Profile = () => {
     fetchProfileData();
   }, [id]);
 
-  const fetchProfileData = async () => {
-    setLoading(true);
-    try {
-      const userRes = await axios.get(`http://localhost:8080/api/v1/users/find/${targetId}`, config);
-      setUser(userRes.data);
+const fetchProfileData = async (showLoading = true) => {
+  if (showLoading) setLoading(true);
+  
+  try {
+    const userRes = await axios.get(`http://localhost:8080/api/v1/users/find/${targetId}`, config);
+    setUser(userRes.data);
 
-      const postsRes = await axios.get(`http://localhost:8080/api/v1/posts/user-posts/${targetId}`, config);
-      setUserPosts(postsRes.data);
-    } catch (err) {
-      console.log("Error fetching profile data", err);
-    }
-    setLoading(false);
-  };
+    const postsRes = await axios.get(`http://localhost:8080/api/v1/posts/user-posts/${targetId}`, config);
+    setUserPosts(postsRes.data);
+  } catch (err) {
+    console.log("Error fetching profile data", err);
+  }
+  setLoading(false);
+};
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
