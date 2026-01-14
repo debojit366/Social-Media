@@ -9,19 +9,39 @@ const SearchPage = () => {
   
   const query = searchParams.get("q");
 
-  useEffect(() => {
-    const getResults = async () => {
-      setLoading(true);
-      try {
-        const res = await axios.get(`http://localhost:8080/api/v1/users/search?q=${query}`);
-        setResults(res.data);
-      } catch (err) {
-        console.log(err);
+useEffect(() => {
+  const getResults = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      
+      if(!token) {
+          console.error("Token missing in local storage");
+          setLoading(false);
+          return;
       }
+
+      const res = await axios.get(`http://localhost:8080/api/v1/users/search?q=${query}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      setResults(res.data);
+    } catch (err) {
+
+      console.log("Search error info:", err.response?.data);
+    } finally {
       setLoading(false);
-    };
-    if (query) getResults();
-  }, [query]);
+    }
+  };
+
+  if (query && query.trim() !== "") {
+    getResults();
+  } else {
+    setResults([]);
+  }
+}, [query]);
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20 px-4">

@@ -6,6 +6,7 @@ import { Routes, Route, useLocation } from "react-router-dom"
 import Profile from "./pages/Profile"
 import Navbar from "./components/Navbar"
 import EditProfile from "./pages/EditProfile"
+import SearchPage from "./pages/SearchPage"
 function App() {
   const location = useLocation();
   const hideNavbarPaths = ["/login", "/register", "/forgot-password","/edit-profile"];
@@ -19,6 +20,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/edit-profile" element={<EditProfile />} />
+        <Route path="/search" element={<SearchPage />} />
       </Routes>
     </>
   )

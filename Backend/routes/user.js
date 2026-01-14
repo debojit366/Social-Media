@@ -3,7 +3,7 @@ import {
   sendFollowRequest, 
   acceptFollowRequest, 
   rejectFollowRequest,
-  getPendingRequests,getUserProfile,updateUser
+  getPendingRequests,getUserProfile,updateUser,searchUsers
 } from "../controllers/userController.js";
 import verifyToken from "../middleware/verifyToken.js";
 import {upload} from "../config/cloudinary.js";
