@@ -26,7 +26,17 @@ const Profile = () => {
   const config = {
     headers: { 'Authorization': `Bearer ${token}` }
   };
-
+  const handleFollowToggle = async () => {
+  try {
+    const res = await axios.patch(`http://localhost:8080/api/v1/users/${user._id}/request`, {}, config);
+    
+    fetchProfileData(); 
+    alert(res.data.message || "Action successful!");
+  } catch (err) {
+    console.log("Follow error:", err);
+    alert("Something went wrong!");
+  }
+};
   useEffect(() => {
     window.scrollTo(0, 0);
     fetchProfileData();
@@ -114,8 +124,15 @@ const Profile = () => {
                   <Edit3 size={18}/> Edit Profile
                 </button>
               ) : (
-                <button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-2xl font-bold transition-all shadow-lg">
-                  {user.followers?.includes(loggedInUser._id) ? "Unfollow" : "Follow"}
+                <button 
+                    onClick={handleFollowToggle}
+                    className={`flex items-center gap-2 px-8 py-3 rounded-2xl font-bold transition-all shadow-lg ${
+                      user.followers?.includes(loggedInUser._id) 
+                        ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                        : "bg-indigo-600 text-white hover:bg-indigo-700"
+                    }`}
+                  >
+                    {user.followers?.includes(loggedInUser._id) ? "Unfollow" : "Follow"}
                 </button>
               )}
             </div>

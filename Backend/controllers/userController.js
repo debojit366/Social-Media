@@ -1,31 +1,47 @@
 import User from "../models/userModel.js";
 import fs from "fs";
 import {handleUpload,deleteFromCloudinary} from "../config/cloudinary.js";
+
+
+
+
+
 export const sendFollowRequest = async (req, res, next) => {
   try {
     const userToFollow = await User.findById(req.params.id);
     const currentUser = await User.findById(req.user.id);
+    const currentUserId = req.user.id;
+
+    if (!userToFollow) return res.status(404).json("User not found!");
 
     if (userToFollow.isPrivate) {
-      if (!userToFollow.friendRequests.includes(req.user.id)) {
-        await userToFollow.updateOne({ $push: { friendRequests: req.user.id } });
-        res.status(200).json("Follow request sent!");
+      if (userToFollow.friendRequests.includes(currentUserId)) {
+        await userToFollow.updateOne({ $pull: { friendRequests: currentUserId } });
+        return res.status(200).json({ message: "Follow request cancelled!", status: "none" });
       } else {
-        res.status(400).json("Request already pending!");
+        await userToFollow.updateOne({ $push: { friendRequests: currentUserId } });
+        return res.status(200).json({ message: "Follow request sent!", status: "pending" });
       }
-    } else {
-      if (!userToFollow.followers.includes(req.user.id)) {
-        await userToFollow.updateOne({ $push: { followers: req.user.id } });
-        await currentUser.updateOne({ $push: { followings: req.params.id } });
-        res.status(200).json("Started following!");
+    } 
+    
+    else {
+      if (userToFollow.followers.includes(currentUserId)) {
+        await userToFollow.updateOne({ $pull: { followers: currentUserId } });
+        await currentUser.updateOne({ $pull: { followings: req.params.id } });
+        return res.status(200).json({ message: "Unfollowed successfully!", status: "unfollowed" });
       } else {
-        res.status(400).json("Already following!");
+        await userToFollow.updateOne({ $push: { followers: currentUserId } });
+        await currentUser.updateOne({ $push: { followings: req.params.id } });
+        return res.status(200).json({ message: "Started following!", status: "followed" });
       }
     }
   } catch (err) {
     next(err);
   }
 };
+
+
+
 
 
 
