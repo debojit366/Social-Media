@@ -30,11 +30,10 @@ const Profile = () => {
   try {
     const res = await axios.patch(`http://localhost:8080/api/v1/users/${user._id}/request`, {}, config);
     
-    fetchProfileData(); 
-    alert(res.data.message || "Action successful!");
+    fetchProfileData();
+    console.log("Follow toggle response:", res.data);
   } catch (err) {
     console.log("Follow error:", err);
-    alert("Something went wrong!");
   }
 };
   useEffect(() => {

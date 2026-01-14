@@ -1,4 +1,5 @@
 import Post from "../models/postModel.js";
+import User from "../models/userModel.js";
 import { handleUpload, deleteFromCloudinary } from "../config/cloudinary.js";
 import fs from "fs";
 /*
@@ -151,19 +152,28 @@ const likePost = async (req, res, next) => {
 @desc    Get user profile posts
 @route   GET /api/v1/posts/user-posts
 */
+
+
 export const getUserProfilePosts = async (req, res) => {
   try {
-    const posts = await Post.find({ userId: req.user.id })
+    const targetUserId = req.params.id || req.user.id; 
+
+    const targetUser = await User.findById(targetUserId);
+    if (!targetUser) return res.status(404).json({ message: "User not found" });
+
+    const isOwner = targetUserId === req.user.id;
+    const isFollower = targetUser.followers.includes(req.user.id);
+
+    if (targetUser.isPrivate && !isOwner && !isFollower) {
+       return res.status(200).json([]);
+    }
+
+    const posts = await Post.find({ userId: targetUserId })
       .populate("userId", "firstName lastName profilePicture")
       .sort({ createdAt: -1 });
 
-    if (!posts || posts.length === 0) {
-      return res.status(200).json({ 
-        message: "no posts found",
-       });
-    }
-
     res.status(200).json(posts);
+
   } catch (error) {
     res.status(500).json({ message: "error while finding posts", error: error.message });
   }

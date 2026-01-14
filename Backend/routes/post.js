@@ -6,7 +6,7 @@ import { upload } from "../config/cloudinary.js";
 const router = express.Router();
 
 router.post("/", verifyToken, upload.single("img"), createPost);
-router.get("/user-posts", verifyToken, getUserProfilePosts);
+router.get("/user-posts/:id", verifyToken, getUserProfilePosts);
 router.put("/:id", verifyToken,upload.single("img"), updatePost);
 router.delete("/:id", verifyToken, deletePost);
 router.get("/:id", getPost);
