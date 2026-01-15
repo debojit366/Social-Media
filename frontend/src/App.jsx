@@ -8,6 +8,7 @@ import EditProfile from "./pages/EditProfile"
 import SearchPage from "./pages/SearchPage"
 import Timeline from "./pages/Timeline"
 import Notifications from "./pages/Notifications"
+import Settings from "./pages/Settings"
 function App() {
   const location = useLocation();
   const hideNavbarPaths = ["/login", "/register", "/forgot-password","/edit-profile"];
@@ -24,6 +25,7 @@ function App() {
         <Route path="/search" element={<SearchPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </>
   )
