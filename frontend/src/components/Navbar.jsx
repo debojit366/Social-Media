@@ -75,9 +75,9 @@ const Navbar = () => {
             </div>
           </NavLink>
 
-          <button className="p-2.5 rounded-xl text-gray-400 hover:bg-gray-50 transition-all hidden sm:block">
+          <NavLink to="/notifications" className="p-2.5 rounded-xl text-gray-400 hover:bg-gray-50 transition-all hidden sm:block">
             <Bell size={24} />
-          </button>
+          </NavLink>
 
           {/* SETTINGS BUTTON */}
           <NavLink to="/settings" className={navBtnClass} title="Settings">
