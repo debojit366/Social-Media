@@ -23,7 +23,7 @@ const Timeline = () => {
   const fetchTimeline = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:8080/api/v1/posts/timeline/all", config);
+      const res = await axios.get("http://localhost:8080/api/v1/posts/timeline", config);
       setPosts(res.data);
     } catch (err) {
       console.log("Timeline error", err);
