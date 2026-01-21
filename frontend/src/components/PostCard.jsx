@@ -15,14 +15,15 @@ const PostCard = ({ post }) => {
       setIsLiked(!isLiked);
       setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
 
-      await axios.put(`http://localhost:8080/api/posts/${post._id}/like`, 
+      const res = await axios.put(`http://localhost:8080/api/v1/posts/${post._id}/like`, 
         { userId: currentUser._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      console.log(res);
     } catch (err) {
       console.error("Failed to like post", err);
       setIsLiked(!isLiked); 
-      setLikeCount(isLiked ? likeCount + 1 : likeCount - 1);
+      setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
     }
   };
 
