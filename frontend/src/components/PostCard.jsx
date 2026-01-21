@@ -39,6 +39,21 @@ const PostCard = ({ post }) => {
     }
   };
 
+
+const handleDelete = async () => {
+  if (window.confirm("Are you sure you want to delete this post?")) {
+    try {
+      await axios.delete(`http://localhost:8080/api/v1/posts/${post._id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      window.location.reload(); 
+    } catch (err) {
+      console.error("Delete failed", err);
+      alert("Could not delete post.");
+    }
+  }
+};
   return (
     <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 mb-6 overflow-hidden transition-all hover:shadow-md">
       
@@ -76,7 +91,7 @@ const PostCard = ({ post }) => {
                     icon={<Trash2 size={16}/>} 
                     label="Delete" 
                     danger 
-                    onClick={() => console.log("Delete Post ID:", post._id)} 
+                    onClick={handleDelete} 
                   />
                 </>
               ) : (
