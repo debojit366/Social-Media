@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { 
   Heart, MessageCircle, Share2, MoreHorizontal, 
-  Trash2, Edit3, Flag, Link2 
+  Trash2, Edit3, Flag, Link2, Check, X, Camera 
 } from 'lucide-react';
 import { format } from 'timeago.js';
 
@@ -15,6 +15,12 @@ const PostCard = ({ post }) => {
   const [showOptions, setShowOptions] = useState(false);
   const menuRef = useRef();
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [description, setDescription] = useState(post.description);
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(post.img);
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     const handler = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -24,6 +30,7 @@ const PostCard = ({ post }) => {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
 
   const handleLike = async () => {
     try {
@@ -39,21 +46,52 @@ const PostCard = ({ post }) => {
     }
   };
 
+  const handleDelete = async () => {
+    if (window.confirm("Are you sure you want to delete this post?")) {
+      try {
+        await axios.delete(`http://localhost:8080/api/v1/posts/${post._id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        window.location.reload(); 
+      } catch (err) {
+        console.error("Delete failed", err);
+        alert("Could not delete post.");
+      }
+    }
+  };
 
-const handleDelete = async () => {
-  if (window.confirm("Are you sure you want to delete this post?")) {
+  const handleUpdate = async () => {
     try {
-      await axios.delete(`http://localhost:8080/api/v1/posts/${post._id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("description", description);
+      if (file) formData.append("img", file);
+
+      const res = await axios.put(`http://localhost:8080/api/v1/posts/${post._id}`, formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data" 
+        }
       });
       
+      setIsEditing(false);
       window.location.reload(); 
+      console.log(res);
     } catch (err) {
-      console.error("Delete failed", err);
-      alert("Could not delete post.");
+      console.error(err);
+      alert("Update failed");
+    } finally {
+      setLoading(false);
     }
-  }
-};
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setDescription(post.description);
+    setPreview(post.img);
+    setFile(null);
+  };
+
   return (
     <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 mb-6 overflow-hidden transition-all hover:shadow-md">
       
@@ -78,15 +116,17 @@ const handleDelete = async () => {
             <MoreHorizontal size={20} />
           </button>
 
-          {/* Actual Dropdown Menu */}
-          
           {showOptions && (
             <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 py-2 animate-in fade-in zoom-in duration-200">
               <MenuOption icon={<Link2 size={16}/>} label="Copy Link" />
               
               {post.userId?._id === currentUser?._id ? (
                 <>
-                  <MenuOption icon={<Edit3 size={16}/>} label="Edit Post" />
+                  <MenuOption 
+                    icon={<Edit3 size={16}/>} 
+                    label="Edit Post" 
+                    onClick={() => { setIsEditing(true); setShowOptions(false); }} 
+                  />
                   <MenuOption 
                     icon={<Trash2 size={16}/>} 
                     label="Delete" 
@@ -102,16 +142,62 @@ const handleDelete = async () => {
         </div>
       </div>
       
-      {/* Content */}
+      {/* Content Area */}
       <div className="px-5 pb-3">
-        <p className="text-gray-700 leading-relaxed">{post.description}</p>
+        {isEditing ? (
+          <div className="space-y-3 animate-in fade-in duration-200">
+            <textarea 
+              className="w-full h-28 p-4 bg-gray-50 border border-indigo-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none font-medium text-gray-700"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              autoFocus
+            />
+            
+            {/* Image Preview */}
+            <div className="relative group rounded-2xl overflow-hidden border">
+              <img src={preview} alt="preview" className="w-full h-48 object-cover opacity-70" />
+              <label className="absolute inset-0 flex items-center justify-center bg-black/30 text-white font-bold cursor-pointer opacity-100 transition-opacity">
+                <Camera size={20} className="mr-2" /> Change Photo
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={(e) => {
+                    const selected = e.target.files[0];
+                    setFile(selected);
+                    setPreview(URL.createObjectURL(selected));
+                  }} 
+                />
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <button 
+                onClick={cancelEdit} 
+                className="p-2 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+              >
+                <X size={20} />
+              </button>
+              <button 
+                onClick={handleUpdate} 
+                disabled={loading}
+                className="px-6 py-2 rounded-xl bg-indigo-600 text-white font-bold flex items-center gap-2 shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
+              >
+                {loading ? "Saving..." : <><Check size={18} /> Save</>}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="text-gray-700 leading-relaxed mb-3">{description}</p>
+            {preview && (
+              <div className="px-0">
+                <img src={preview} alt="post" className="w-full h-auto max-h-[500px] object-cover rounded-[1.5rem]" />
+              </div>
+            )}
+          </>
+        )}
       </div>
-      
-      {post.img && (
-        <div className="px-2">
-          <img src={post.img} alt="post" className="w-full h-auto max-h-[500px] object-cover rounded-[1.5rem]" />
-        </div>
-      )}
 
       {/* Action Bar */}
       <div className="p-4 flex items-center justify-between border-t border-gray-50 mt-2">
