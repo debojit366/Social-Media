@@ -221,7 +221,8 @@ export const searchUsers = async (req, res) => {
 
 export const getMutualFriends = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id)
+    const userId = req.user.id;
+    const user = await User.findById(userId)
       .populate("followers", "username firstName profilePicture")
       .populate("followings", "username firstName profilePicture");
 
