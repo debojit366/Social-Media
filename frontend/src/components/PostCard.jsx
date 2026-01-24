@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { 
   Heart, MessageCircle, Share2, MoreHorizontal, 
-  Trash2, Edit3, Flag, Link2, Check, X, Camera 
+  Trash2, Edit3, Flag, Link2, Check, X, Camera, Send 
 } from 'lucide-react';
 import { format } from 'timeago.js';
 
@@ -10,17 +10,25 @@ const PostCard = ({ post }) => {
   const currentUser = JSON.parse(localStorage.getItem("profile"));
   const token = localStorage.getItem("token");
 
+  // --- Core States ---
   const [isLiked, setIsLiked] = useState(post.likes.includes(currentUser?._id));
   const [likeCount, setLikeCount] = useState(post.likes.length);
   const [showOptions, setShowOptions] = useState(false);
   const menuRef = useRef();
 
+  // --- In-place Edit States ---
   const [isEditing, setIsEditing] = useState(false);
   const [description, setDescription] = useState(post.description);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(post.img);
   const [loading, setLoading] = useState(false);
 
+  // --- Comment States ---
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [comments, setComments] = useState(post.comments || []);
+
+  // Dropdown click-outside handler
   useEffect(() => {
     const handler = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -31,6 +39,7 @@ const PostCard = ({ post }) => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // --- Handlers ---
 
   const handleLike = async () => {
     try {
@@ -54,7 +63,6 @@ const PostCard = ({ post }) => {
         });
         window.location.reload(); 
       } catch (err) {
-        console.error("Delete failed", err);
         alert("Could not delete post.");
       }
     }
@@ -67,21 +75,33 @@ const PostCard = ({ post }) => {
       formData.append("description", description);
       if (file) formData.append("img", file);
 
-      const res = await axios.put(`http://localhost:8080/api/v1/posts/${post._id}`, formData, {
+      await axios.put(`http://localhost:8080/api/v1/posts/${post._id}`, formData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data" 
         }
       });
-      
       setIsEditing(false);
-      window.location.reload(); 
-      console.log(res);
+      window.location.reload();
     } catch (err) {
-      console.error(err);
       alert("Update failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    try {
+      const res = await axios.post(`http://localhost:8080/api/v1/posts/${post._id}/comment`, 
+        { userId: currentUser._id, text: commentText },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setComments([...comments, res.data.newComment]);
+      setCommentText("");
+    } catch (err) {
+      console.error("Comment failed");
     }
   };
 
@@ -107,7 +127,6 @@ const PostCard = ({ post }) => {
           </div>
         </div>
 
-        {/* Options Menu Container */}
         <div className="relative" ref={menuRef}>
           <button 
             onClick={() => setShowOptions(!showOptions)}
@@ -119,23 +138,11 @@ const PostCard = ({ post }) => {
           {showOptions && (
             <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 py-2 animate-in fade-in zoom-in duration-200">
               <MenuOption icon={<Link2 size={16}/>} label="Copy Link" />
-              
-              {post.userId?._id === currentUser?._id ? (
+              {post.userId?._id === currentUser?._id && (
                 <>
-                  <MenuOption 
-                    icon={<Edit3 size={16}/>} 
-                    label="Edit Post" 
-                    onClick={() => { setIsEditing(true); setShowOptions(false); }} 
-                  />
-                  <MenuOption 
-                    icon={<Trash2 size={16}/>} 
-                    label="Delete" 
-                    danger 
-                    onClick={handleDelete} 
-                  />
+                  <MenuOption icon={<Edit3 size={16}/>} label="Edit Post" onClick={() => { setIsEditing(true); setShowOptions(false); }} />
+                  <MenuOption icon={<Trash2 size={16}/>} label="Delete" danger onClick={handleDelete} />
                 </>
-              ) : (
-                <MenuOption icon={<Flag size={16}/>} label="Report" danger />
               )}
             </div>
           )}
@@ -147,54 +154,32 @@ const PostCard = ({ post }) => {
         {isEditing ? (
           <div className="space-y-3 animate-in fade-in duration-200">
             <textarea 
-              className="w-full h-28 p-4 bg-gray-50 border border-indigo-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none font-medium text-gray-700"
+              className="w-full h-28 p-4 bg-gray-50 border border-indigo-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none font-medium text-gray-700"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               autoFocus
             />
-            
-            {/* Image Preview */}
             <div className="relative group rounded-2xl overflow-hidden border">
               <img src={preview} alt="preview" className="w-full h-48 object-cover opacity-70" />
-              <label className="absolute inset-0 flex items-center justify-center bg-black/30 text-white font-bold cursor-pointer opacity-100 transition-opacity">
+              <label className="absolute inset-0 flex items-center justify-center bg-black/30 text-white font-bold cursor-pointer transition-opacity">
                 <Camera size={20} className="mr-2" /> Change Photo
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  accept="image/*" 
-                  onChange={(e) => {
-                    const selected = e.target.files[0];
-                    setFile(selected);
-                    setPreview(URL.createObjectURL(selected));
-                  }} 
-                />
+                <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                  setFile(e.target.files[0]);
+                  setPreview(URL.createObjectURL(e.target.files[0]));
+                }} />
               </label>
             </div>
-
-            <div className="flex justify-end gap-2 pt-1">
-              <button 
-                onClick={cancelEdit} 
-                className="p-2 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
-              >
-                <X size={20} />
-              </button>
-              <button 
-                onClick={handleUpdate} 
-                disabled={loading}
-                className="px-6 py-2 rounded-xl bg-indigo-600 text-white font-bold flex items-center gap-2 shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
-              >
-                {loading ? "Saving..." : <><Check size={18} /> Save</>}
+            <div className="flex justify-end gap-2">
+              <button onClick={cancelEdit} className="p-2 rounded-xl bg-gray-100 text-gray-500"><X size={20} /></button>
+              <button onClick={handleUpdate} disabled={loading} className="px-6 py-2 rounded-xl bg-indigo-600 text-white font-bold flex items-center gap-2 shadow-lg">
+                {loading ? "..." : <><Check size={18} /> Save</>}
               </button>
             </div>
           </div>
         ) : (
           <>
             <p className="text-gray-700 leading-relaxed mb-3">{description}</p>
-            {preview && (
-              <div className="px-0">
-                <img src={preview} alt="post" className="w-full h-auto max-h-[500px] object-cover rounded-[1.5rem]" />
-              </div>
-            )}
+            {preview && <img src={preview} alt="post" className="w-full h-auto max-h-[500px] object-cover rounded-[1.5rem]" />}
           </>
         )}
       </div>
@@ -202,35 +187,61 @@ const PostCard = ({ post }) => {
       {/* Action Bar */}
       <div className="p-4 flex items-center justify-between border-t border-gray-50 mt-2">
         <div className="flex items-center gap-1">
-          <button 
-            onClick={handleLike}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors group ${isLiked ? "bg-red-50 text-red-500" : "hover:bg-red-50 text-gray-500 hover:text-red-500"}`}
-          >
-            <Heart size={20} className={`transition-transform group-active:scale-125 ${isLiked ? "fill-current" : ""}`} />
+          <button onClick={handleLike} className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors group ${isLiked ? "bg-red-50 text-red-500" : "text-gray-500 hover:text-red-500"}`}>
+            <Heart size={20} className={isLiked ? "fill-current" : ""} />
             <span className="text-sm font-bold">{likeCount}</span>
           </button>
           
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-blue-50 text-gray-500 hover:text-blue-500 transition-colors">
+          <button onClick={() => setShowComments(!showComments)} className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors ${showComments ? "bg-blue-50 text-blue-500" : "text-gray-500 hover:text-blue-500"}`}>
             <MessageCircle size={20} />
-            <span className="text-sm font-bold">Comments</span>
+            <span className="text-sm font-bold">{comments.length}</span>
           </button>
         </div>
-
-        <button className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition-colors">
-          <Share2 size={20} />
-        </button>
+        <button className="p-2 rounded-xl hover:bg-gray-100 text-gray-500"><Share2 size={20} /></button>
       </div>
+
+      {/* Comment Section */}
+      {showComments && (
+        <div className="bg-gray-50/50 px-5 py-4 border-t border-gray-50 animate-in slide-in-from-top-2 duration-300">
+          <form onSubmit={handleCommentSubmit} className="flex gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gray-200 flex-shrink-0 flex items-center justify-center font-bold text-gray-500">
+              {currentUser?.firstName?.charAt(0)}
+            </div>
+            <div className="relative flex-1">
+              <input 
+                type="text" placeholder="Write a comment..."
+                className="w-full bg-white border border-gray-200 rounded-2xl py-2.5 px-4 pr-12 outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                value={commentText} onChange={(e) => setCommentText(e.target.value)}
+              />
+              <button type="submit" className="absolute right-2 top-1.5 p-1.5 text-indigo-500"><Send size={18} /></button>
+            </div>
+          </form>
+
+          <div className="space-y-4">
+            {comments.map((c, i) => (
+              <div key={i} className="flex gap-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold uppercase">
+                  {c.username?.charAt(0) || "U"}
+                </div>
+                <div className="bg-white p-3 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm flex-1">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-xs font-black text-gray-900">{c.username}</span>
+                    <span className="text-[10px] text-gray-400">{format(c.createdAt)}</span>
+                  </div>
+                  <p className="text-sm text-gray-700">{c.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 const MenuOption = ({ icon, label, onClick, danger }) => (
-  <button 
-    onClick={onClick}
-    className={`w-full flex items-center gap-3 px-4 py-2 text-sm font-semibold transition-colors hover:bg-gray-50 ${danger ? 'text-red-500 hover:bg-red-50' : 'text-gray-600'}`}
-  >
-    {icon}
-    {label}
+  <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-2 text-sm font-semibold transition-colors hover:bg-gray-50 ${danger ? 'text-red-500 hover:bg-red-50' : 'text-gray-600'}`}>
+    {icon} {label}
   </button>
 );
 
