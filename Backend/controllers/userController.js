@@ -219,3 +219,25 @@ export const searchUsers = async (req, res) => {
 };
 
 
+export const getMutualFriends = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .populate("followers", "username firstName profilePicture")
+      .populate("followings", "username firstName profilePicture");
+
+
+    const followerList = user.followers;
+    const followingList = user.followings;
+
+
+    const mutualFriends = followerList.filter((follower) =>
+      followingList.some((following) => following._id.equals(follower._id))
+    );
+
+    res.status(200).json(mutualFriends);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+};
+
+
