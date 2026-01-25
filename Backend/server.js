@@ -1,10 +1,16 @@
 import 'dotenv/config'
 import express from "express"
 import connectDB from './config/db.js'
+
+
 import authRoutes from './routes/auth.js'
 import postRoutes from './routes/post.js'
+import messageRoutes from "./routes/message.js";
 import userRoutes from './routes/user.js'
 import commentRoute from './routes/comment.js'
+
+
+
 import errorMiddleware from './middleware/error.js'
 import cors from 'cors'
 import http from 'http'
@@ -35,7 +41,7 @@ app.use("/api/v1/auth", authRoutes)
 app.use("/api/v1/posts", postRoutes)
 app.use("/api/v1/users", userRoutes)
 app.use("/api/v1/comments", commentRoute)
-
+app.use('/api/v1/messages',messageRoutes)
 
 const PORT = process.env.PORT || 5000
 
