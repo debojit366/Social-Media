@@ -9,11 +9,10 @@ import SearchPage from "./pages/SearchPage"
 import Timeline from "./pages/Timeline"
 import Notifications from "./pages/Notifications"
 import Settings from "./pages/Settings"
-// import ChatPage from "./pages/ChatPage"
 import Messages from "./pages/Messages"
 function App() {
   const location = useLocation();
-  const hideNavbarPaths = ["/login", "/register", "/forgot-password","/edit-profile","/messages"];
+  const hideNavbarPaths = ["/login", "/register", "/forgot-password","/edit-profile",];
   return (
     <>
       {!hideNavbarPaths.includes(location.pathname) && <Navbar />}
@@ -27,7 +26,6 @@ function App() {
         <Route path="/search" element={<SearchPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/notifications" element={<Notifications />} />
-        {/* <Route path="/chats" element={<ChatPage />} /> */}
         <Route path="/messages" element={<Messages />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
