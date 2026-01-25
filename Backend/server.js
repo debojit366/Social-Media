@@ -7,9 +7,12 @@ import userRoutes from './routes/user.js'
 import commentRoute from './routes/comment.js'
 import errorMiddleware from './middleware/error.js'
 import cors from 'cors'
+import http from 'http'
+import { initSocket } from './socket/socket.js'
+
+
 const app = express()
-app.use(express.json())
-connectDB()
+
 
 app.use(cors({
   origin: "http://localhost:5173",
@@ -17,13 +20,29 @@ app.use(cors({
   credentials: true
 }));
 
-app.use("/api/v1/auth",authRoutes)
-app.use("/api/v1/posts",postRoutes)
-app.use("/api/v1/users",userRoutes)
-app.use("/api/v1/comments",commentRoute)
+
+app.use(express.json())
+connectDB()
+
+
+const server = http.createServer(app);
+
+
+initSocket(server);
+
+
+app.use("/api/v1/auth", authRoutes)
+app.use("/api/v1/posts", postRoutes)
+app.use("/api/v1/users", userRoutes)
+app.use("/api/v1/comments", commentRoute)
+
 
 const PORT = process.env.PORT || 5000
+
+
 app.use(errorMiddleware)
-app.listen(PORT, () => {
+
+
+server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`)
 })
