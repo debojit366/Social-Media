@@ -15,12 +15,20 @@ export const initSocket = (server) => {
 
   io.on("connection", (socket) => {
 
-    socket.on("new-user-add", (newUserId) => {
-      if (!activeUsers.some((user) => user.userId === newUserId)) {
-        activeUsers.push({ userId: newUserId, socketId: socket.id });
-      }
-      io.emit("get-users", activeUsers);
-    });
+        socket.on("new-user-add", (newUserId) => {
+            if (newUserId) {
+              const existingUser = activeUsers.find((user) => user.userId === newUserId);
+              
+              if (existingUser) {
+                existingUser.socketId = socket.id;
+              } else {
+                activeUsers.push({ userId: newUserId, socketId: socket.id });
+              }
+            }
+            
+            console.log("Current Online Users:", activeUsers);
+            io.emit("get-users", activeUsers);
+      });
 
 
     socket.on("send-message", (data) => {

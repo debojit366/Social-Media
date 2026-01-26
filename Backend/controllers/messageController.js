@@ -13,6 +13,8 @@ export const sendMessage = async (req, res) => {
 };
 
 
+
+
 // --- Chat History Fetch Karna ---
 export const getMessages = async (req, res) => {
   try {
@@ -24,6 +26,7 @@ export const getMessages = async (req, res) => {
         { senderId: senderId, receiverId: receiverId },
         { senderId: receiverId, receiverId: senderId },
       ],
+      // deletedBy: { $ne: senderId }
     }).sort({ createdAt: 1 });
 
     res.status(200).json(messages);
