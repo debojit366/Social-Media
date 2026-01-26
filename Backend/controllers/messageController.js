@@ -12,6 +12,7 @@ export const sendMessage = async (req, res) => {
   }
 };
 
+
 // --- Chat History Fetch Karna ---
 export const getMessages = async (req, res) => {
   try {
@@ -23,10 +24,43 @@ export const getMessages = async (req, res) => {
         { senderId: senderId, receiverId: receiverId },
         { senderId: receiverId, receiverId: senderId },
       ],
-    }).sort({ createdAt: 1 }); // Purane se naya (Ascending order)
+    }).sort({ createdAt: 1 });
 
     res.status(200).json(messages);
   } catch (error) {
     res.status(500).json({ message: "Error while fetching old messages", error });
+  }
+};
+
+
+
+
+
+export const clearChat = async (req, res) => {
+  try {
+    const { userId, friendId } = req.params;
+
+    
+
+    if (!userId || !friendId) {
+      return res.status(400).json({ message: "User IDs are required" });
+    }
+
+    
+
+    await Message.updateMany(
+      {
+        $or: [
+          { senderId: userId, receiverId: friendId },
+          { senderId: friendId, receiverId: userId }
+        ]
+      },
+      { $addToSet: { deletedBy: userId } }
+    );
+
+    res.status(200).json({ success: true, message: "Chat cleared successfully for you" });
+  } catch (error) {
+    console.error("Clear Chat Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };

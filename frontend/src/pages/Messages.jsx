@@ -15,7 +15,7 @@ const Messages = () => {
 
   const socket = useRef();
   const scrollRef = useRef();
-  const menuRef = useRef(); // Dropdown click-outside ke liye ref
+  const menuRef = useRef(); 
 
   const currentUser = JSON.parse(localStorage.getItem("profile"));
   const token = localStorage.getItem("token");
