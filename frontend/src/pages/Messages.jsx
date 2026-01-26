@@ -8,7 +8,7 @@ const Messages = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [activeUsers, setActiveUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null); // Yahan Friend ki ID store hogi
+  const [selectedUser, setSelectedUser] = useState(null);
   const [mutualFriends, setMutualFriends] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -18,7 +18,7 @@ const Messages = () => {
   const currentUser = JSON.parse(localStorage.getItem("profile"));
   const token = localStorage.getItem("token");
 
-  // 1. Sidebar ke liye Friends fetch karna
+
   useEffect(() => {
     const fetchFriends = async () => {
       try {
@@ -33,25 +33,28 @@ const Messages = () => {
     if (currentUser?._id) fetchFriends();
   }, []);
 
-  // 2. Jab User badle, toh Purani Chat History load karna
+
   useEffect(() => {
     const fetchChatHistory = async () => {
       if (!selectedUser) return;
       try {
-        // API endpoint for history: sender/receiver
+
         const res = await axios.get(`http://localhost:8080/api/v1/posts/messages/${currentUser._id}/${selectedUser.userId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setMessages(res.data);
       } catch (err) {
         console.log("History load error:", err);
-        setMessages([]); // Agar koi chat na ho
+        setMessages([]);
       }
     };
     fetchChatHistory();
-  }, [selectedUser]); // selectedUser change hone par chalyega
+  }, [selectedUser]);
+
 
   // 3. Socket Initialization
+
+
   useEffect(() => {
     socket.current = io("http://localhost:8080");
     socket.current.emit("new-user-add", currentUser?._id);
@@ -59,15 +62,28 @@ const Messages = () => {
     return () => socket.current.disconnect();
   }, [currentUser]);
 
+
+
+
   // 4. Real-time Message milna
+
   useEffect(() => {
-    socket.current.on("receive-message", (data) => {
-      // Check: kya message usi bande ka hai jiska chatbox khula hai?
-      if (data.senderId === selectedUser?.userId) {
-        setMessages((prev) => [...prev, data]);
-      }
-    });
-  }, [selectedUser]);
+  // Listener set karo
+  const handleReceive = (data) => {
+    if (data.senderId === selectedUser?.userId) {
+      setMessages((prev) => [...prev, data]);
+    }
+  };
+
+  socket.current.on("receive-message", handleReceive);
+
+  return () => {
+    socket.current.off("receive-message", handleReceive);
+  };
+}, [selectedUser]);
+
+
+
 
   // 5. Message Bhejna
   const handleSend = async (e) => {
@@ -81,12 +97,10 @@ const Messages = () => {
       createdAt: new Date()
     };
 
-    // Socket (Instant delivery)
     socket.current.emit("send-message", messageData);
 
-    // Database (Permanent save)
     try {
-      await axios.post("http://localhost:8080/api/v1/posts/messages", messageData, {
+      await axios.post("http://localhost:8080/api/v1/messages/send", messageData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessages((prev) => [...prev, messageData]);
@@ -96,10 +110,14 @@ const Messages = () => {
     }
   };
 
+
+
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+
+  
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
       

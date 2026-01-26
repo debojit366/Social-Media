@@ -27,6 +27,6 @@ export const getMessages = async (req, res) => {
 
     res.status(200).json(messages);
   } catch (error) {
-    res.status(500).json({ message: "History fetch karne mein error", error });
+    res.status(500).json({ message: "Error while fetching old messages", error });
   }
 };
