@@ -109,10 +109,10 @@ const Messages = () => {
   }, [messages]);
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
+    <div className="flex h-[calc(100vh-64px)] mt-[64px] bg-gray-50 overflow-hidden font-sans">
       
       {/* --- SIDEBAR --- */}
-      <div className="w-80 bg-white border-r flex flex-col shadow-sm">
+      <div className={`w-full sm:w-80 bg-white border-r flex flex-col shadow-sm ${selectedUser ? 'hidden sm:flex' : 'flex'}`}>
         <div className="p-6">
           <h1 className="text-2xl font-black text-gray-800 mb-4 tracking-tight">Messages</h1>
           <div className="relative">
@@ -166,7 +166,7 @@ const Messages = () => {
       </div>
 
       {/* --- MAIN CHAT BOX --- */}
-      <div className="flex-1 flex flex-col bg-white">
+      <div className={`flex-1 flex flex-col bg-white ${!selectedUser ? 'hidden sm:flex' : 'flex'}`}>
         {selectedUser ? (
           <>
             <div className="p-4 border-b flex justify-between items-center bg-white shadow-sm z-10">
