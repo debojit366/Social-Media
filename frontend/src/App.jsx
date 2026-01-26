@@ -12,7 +12,7 @@ import Settings from "./pages/Settings"
 import Messages from "./pages/Messages"
 function App() {
   const location = useLocation();
-  const hideNavbarPaths = ["/login", "/register", "/forgot-password","/edit-profile",];
+  const hideNavbarPaths = ["/login", "/register", "/forgot-password","/edit-profile","/messages"];
   return (
     <>
       {!hideNavbarPaths.includes(location.pathname) && <Navbar />}
