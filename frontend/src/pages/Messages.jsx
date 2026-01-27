@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
-import { Send, Search, MoreVertical, MessageSquare, X, Phone, Video, Trash2 } from 'lucide-react';
+import { Send, Search, MoreVertical, MessageSquare, X, Phone, Video, Trash2, Download, ShieldAlert } from 'lucide-react'; // New icons added
 import { format } from 'timeago.js';
 import axios from 'axios';
 
@@ -20,34 +20,50 @@ const Messages = () => {
   const currentUser = JSON.parse(localStorage.getItem("profile"));
   const token = localStorage.getItem("token");
 
-  // 1. Socket Initialization
+  // --- Export Chat Logic ---
+  const handleExportChat = () => {
+    if (messages.length === 0) return alert("no message to export!");
+    
+    const chatContent = messages.map(m => {
+      const name = m.senderId === currentUser?._id ? "Me" : selectedUser.username;
+      return `[${format(m.createdAt)}] ${name}: ${m.text}`;
+    }).join('\n');
+
+    const blob = new Blob([chatContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `chat_with_${selectedUser.username}.txt`;
+    link.click();
+    setShowMenu(false);
+  };
+
+  // --- Block User Placeholder ---
+  const handleBlockUser = () => {
+    if (window.confirm(`do you really want to block ${selectedUser.username} ?`)) {
+      setShowMenu(false);
+    }
+  };
+
+  // Socket & Fetch Effects
   useEffect(() => {
     socket.current = io("http://localhost:8080");
     socket.current.emit("new-user-add", currentUser?._id);
-    
-    socket.current.on("get-users", (users) => {
-      setActiveUsers(users);
-    });
-
+    socket.current.on("get-users", (users) => setActiveUsers(users));
     return () => socket.current.disconnect();
   }, [currentUser?._id]);
 
-
   useEffect(() => {
     if (!socket.current) return;
-
     const handleReceive = (data) => {
-
       if (data.senderId === selectedUser?.userId) {
         setMessages((prev) => [...prev, data]);
       }
     };
-
     socket.current.on("receive-message", handleReceive);
     return () => socket.current.off("receive-message", handleReceive);
-  }, [selectedUser]); 
+  }, [selectedUser]);
 
-  // 3. Fetch Friends List
   useEffect(() => {
     const fetchFriends = async () => {
       try {
@@ -55,14 +71,11 @@ const Messages = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         setMutualFriends(res.data);
-      } catch (err) {
-        console.error("Friends fetch error:", err);
-      }
+      } catch (err) { console.error(err); }
     };
     if (currentUser?._id) fetchFriends();
   }, [currentUser?._id, token]);
 
-  // 4. Fetch Chat History
   useEffect(() => {
     const fetchChatHistory = async () => {
       if (!selectedUser) return;
@@ -71,74 +84,54 @@ const Messages = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         setMessages(res.data);
-      } catch (err) {
-        setMessages([]);
-      }
+      } catch (err) { setMessages([]); }
     };
     fetchChatHistory();
   }, [selectedUser, currentUser?._id, token]);
 
-  // 5. Send Message Logic
   const handleSend = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedUser) return;
-
     const messageData = {
       senderId: currentUser?._id,
       receiverId: selectedUser.userId,
       text: newMessage,
       createdAt: new Date()
     };
-
-    // Socket emit
     socket.current.emit("send-message", messageData);
-
     setMessages((prev) => [...prev, messageData]);
     setNewMessage("");
-
     try {
       await axios.post("http://localhost:8080/api/v1/messages/send", messageData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-    } catch (err) {
-      console.log("DB save error:", err);
-    }
+    } catch (err) { console.log(err); }
   };
 
-  // 6. Clear Chat Logic
   const handleClearChat = async () => {
-    if (window.confirm("Bhai, puri chat clear karni hai? (Sirf aapke liye)")) {
+    if (window.confirm("Bhai, puri chat clear karni hai?")) {
       try {
         await axios.put(`http://localhost:8080/api/v1/messages/clear/${currentUser._id}/${selectedUser.userId}`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setMessages([]);
         setShowMenu(false);
-      } catch (err) {
-        console.error("Clear chat error:", err);
-      }
+      } catch (err) { console.error(err); }
     }
   };
 
-  // Dropdown click outside logic
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowMenu(false);
-      }
+      if (menuRef.current && !menuRef.current.contains(event.target)) setShowMenu(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Auto Scroll
-  useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   return (
     <div className="flex h-[calc(100vh-64px)] mt-[64px] bg-gray-50 overflow-hidden font-sans">
-      
       {/* --- SIDEBAR --- */}
       <div className={`w-full sm:w-80 bg-white border-r flex flex-col shadow-sm ${selectedUser ? 'hidden sm:flex' : 'flex'}`}>
         <div className="p-6">
@@ -152,37 +145,27 @@ const Messages = () => {
             />
           </div>
         </div>
-        
         <div className="flex-1 overflow-y-auto px-3 pb-4 scrollbar-hide">
           {mutualFriends
             .filter(f => f.username.toLowerCase().includes(searchQuery.toLowerCase()))
             .map((friend) => {
               const isOnline = activeUsers.some((user) => user.userId === friend._id);
               const isSelected = selectedUser?.userId === friend._id;
-              
               return (
                 <div 
                   key={friend._id}
                   onClick={() => setSelectedUser({ userId: friend._id, username: friend.username })}
-                  className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer mb-1 transition-all group ${
-                    isSelected ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" : "hover:bg-gray-100"
-                  }`}
+                  className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer mb-1 transition-all group ${isSelected ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" : "hover:bg-gray-100"}`}
                 >
                   <div className="relative flex-shrink-0">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold uppercase ${
-                      isSelected ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-600"
-                    }`}>
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold uppercase ${isSelected ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-600"}`}>
                       {friend.username.charAt(0)}
                     </div>
-                    {isOnline && (
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                    )}
+                    {isOnline && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>}
                   </div>
                   <div className="flex-1 overflow-hidden text-left">
                     <p className="font-bold text-sm truncate">{friend.username}</p>
-                    <p className={`text-[11px] truncate ${isSelected ? "text-indigo-100" : isOnline ? "text-green-500 font-semibold" : "text-gray-400"}`}>
-                      {isOnline ? "Online" : "Offline"}
-                    </p>
+                    <p className={`text-[11px] truncate ${isSelected ? "text-indigo-100" : isOnline ? "text-green-500 font-semibold" : "text-gray-400"}`}>{isOnline ? "Online" : "Offline"}</p>
                   </div>
                 </div>
               );
@@ -196,16 +179,10 @@ const Messages = () => {
           <>
             <div className="p-4 border-b flex justify-between items-center bg-white shadow-sm z-20">
               <div className="flex items-center gap-3 text-left">
-                <button onClick={() => setSelectedUser(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 sm:hidden">
-                  <X size={20} />
-                </button>
+                <button onClick={() => setSelectedUser(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 sm:hidden"><X size={20} /></button>
                 <div className="relative">
-                    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold uppercase shadow-inner">
-                      {selectedUser.username.charAt(0)}
-                    </div>
-                    {activeUsers.some(u => u.userId === selectedUser.userId) && (
-                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                    )}
+                  <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold uppercase shadow-inner">{selectedUser.username.charAt(0)}</div>
+                  {activeUsers.some(u => u.userId === selectedUser.userId) && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>}
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-800 leading-none">{selectedUser.username}</h3>
@@ -215,34 +192,47 @@ const Messages = () => {
                 </div>
               </div>
 
-              <div className="relative" ref={menuRef}>
-                <button onClick={() => setShowMenu(!showMenu)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                  <MoreVertical className="text-gray-400" size={20} />
+              {/* External Buttons + Menu */}
+              <div className="flex items-center gap-1 sm:gap-2">
+                <button title="Voice Call" className="p-2.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-all active:scale-90">
+                  <Phone size={20} />
                 </button>
+                <button title="Video Call" className="p-2.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-all active:scale-90">
+                  <Video size={20} />
+                </button>
+                
+                <div className="relative" ref={menuRef}>
+                  <button onClick={() => setShowMenu(!showMenu)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                    <MoreVertical className="text-gray-400" size={20} />
+                  </button>
 
-                {showMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-2 animate-in fade-in zoom-in duration-150">
-                    <button className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 flex items-center gap-3"><Phone size={16} /> Voice Call</button>
-                    <button className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 flex items-center gap-3"><Video size={16} /> Video Call</button>
-                    <div className="my-1 border-t border-gray-50"></div>
-                    <button onClick={handleClearChat} className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 flex items-center gap-3 font-semibold"><Trash2 size={16} /> Clear Chat</button>
-                  </div>
-                )}
+                  {showMenu && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-2 animate-in fade-in zoom-in duration-150">
+                      <button onClick={handleExportChat} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 flex items-center gap-3">
+                        <Download size={16} className="text-gray-400" /> Export Chat
+                      </button>
+                      <button onClick={handleBlockUser} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 flex items-center gap-3">
+                        <ShieldAlert size={16} className="text-gray-400" /> Block User
+                      </button>
+                      <div className="my-1 border-t border-gray-50"></div>
+                      <button onClick={handleClearChat} className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 flex items-center gap-3 font-semibold">
+                        <Trash2 size={16} /> Clear Chat
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
+            {/* Messages & Input (Same as before...) */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gray-50/30">
               {messages.map((m, i) => {
                 const isMe = m.senderId === currentUser?._id;
                 return (
                   <div key={i} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[85%] sm:max-w-[70%] px-4 py-2 rounded-2xl text-[13.5px] shadow-sm ${
-                      isMe ? "bg-indigo-600 text-white rounded-tr-none" : "bg-white border border-gray-100 text-gray-700 rounded-tl-none"
-                    }`}>
+                    <div className={`max-w-[85%] sm:max-w-[70%] px-4 py-2 rounded-2xl text-[13.5px] shadow-sm ${isMe ? "bg-indigo-600 text-white rounded-tr-none" : "bg-white border border-gray-100 text-gray-700 rounded-tl-none"}`}>
                       <p className="leading-relaxed whitespace-pre-wrap break-words">{m.text}</p>
-                      <span className={`text-[9px] mt-1 block opacity-60 text-right ${isMe ? "text-indigo-100" : "text-gray-400"}`}>
-                        {format(m.createdAt)}
-                      </span>
+                      <span className={`text-[9px] mt-1 block opacity-60 text-right ${isMe ? "text-indigo-100" : "text-gray-400"}`}>{format(m.createdAt)}</span>
                     </div>
                   </div>
                 )
@@ -251,22 +241,13 @@ const Messages = () => {
             </div>
 
             <form onSubmit={handleSend} className="p-4 sm:p-5 border-t flex gap-3 bg-white">
-              <input 
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Aa..."
-                className="flex-1 bg-gray-100 border-none rounded-2xl px-5 py-3 outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all shadow-inner"
-              />
-              <button type="submit" disabled={!newMessage.trim()} className="bg-indigo-600 text-white p-3.5 rounded-2xl shadow-lg hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100">
-                <Send size={18} />
-              </button>
+              <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Aa..." className="flex-1 bg-gray-100 border-none rounded-2xl px-5 py-3 outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all shadow-inner" />
+              <button type="submit" disabled={!newMessage.trim()} className="bg-indigo-600 text-white p-3.5 rounded-2xl shadow-lg hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"><Send size={18} /></button>
             </form>
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-300 bg-gray-50/30">
-            <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center shadow-xl mb-6 transform rotate-12">
-              <MessageSquare size={40} className="text-indigo-500" />
-            </div>
+            <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center shadow-xl mb-6 transform rotate-12"><MessageSquare size={40} className="text-indigo-500" /></div>
             <p className="text-xl font-black text-gray-800">Your Inbox</p>
             <p className="text-sm text-gray-400 mt-1 font-medium">Select a friend to start chatting</p>
           </div>
