@@ -223,8 +223,8 @@ export const getMutualFriends = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId)
-      .populate("followers", "username firstName profilePicture")
-      .populate("followings", "username firstName profilePicture");
+      .populate("followers", "username firstName profilePicture lastSeen")
+      .populate("followings", "username firstName profilePicture lastSeen");
 
 
     const followerList = user.followers;

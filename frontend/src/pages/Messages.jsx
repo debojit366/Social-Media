@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
-import { Send, Search, MoreVertical, MessageSquare, X, Phone, Video, Trash2, Download, ShieldAlert } from 'lucide-react'; // New icons added
+import { Send, Search, MoreVertical, MessageSquare, X, Phone, Video, Trash2, Download, ShieldAlert } from 'lucide-react';
 import { format } from 'timeago.js';
 import axios from 'axios';
 
@@ -20,15 +20,22 @@ const Messages = () => {
   const currentUser = JSON.parse(localStorage.getItem("profile"));
   const token = localStorage.getItem("token");
 
+  // --- Helper to get real-time status ---
+  const getStatus = (user) => {
+    if (!user) return "";
+    const isOnline = activeUsers.some((u) => u.userId === (user.userId || user._id));
+    if (isOnline) return "Active Now";
+    if (user.lastSeen) return `Last seen ${format(user.lastSeen)}`;
+    return "Offline";
+  };
+
   // --- Export Chat Logic ---
   const handleExportChat = () => {
     if (messages.length === 0) return alert("no message to export!");
-    
     const chatContent = messages.map(m => {
       const name = m.senderId === currentUser?._id ? "Me" : selectedUser.username;
       return `[${format(m.createdAt)}] ${name}: ${m.text}`;
     }).join('\n');
-
     const blob = new Blob([chatContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -38,7 +45,6 @@ const Messages = () => {
     setShowMenu(false);
   };
 
-  // --- Block User Placeholder ---
   const handleBlockUser = () => {
     if (window.confirm(`do you really want to block ${selectedUser.username} ?`)) {
       setShowMenu(false);
@@ -154,18 +160,20 @@ const Messages = () => {
               return (
                 <div 
                   key={friend._id}
-                  onClick={() => setSelectedUser({ userId: friend._id, username: friend.username })}
+                  onClick={() => setSelectedUser({ userId: friend._id, username: friend.username, lastSeen: friend.lastSeen })}
                   className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer mb-1 transition-all group ${isSelected ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" : "hover:bg-gray-100"}`}
                 >
                   <div className="relative flex-shrink-0">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold uppercase ${isSelected ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-600"}`}>
                       {friend.username.charAt(0)}
                     </div>
-                    {isOnline && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>}
+                    {isOnline && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full animate-pulse"></div>}
                   </div>
                   <div className="flex-1 overflow-hidden text-left">
                     <p className="font-bold text-sm truncate">{friend.username}</p>
-                    <p className={`text-[11px] truncate ${isSelected ? "text-indigo-100" : isOnline ? "text-green-500 font-semibold" : "text-gray-400"}`}>{isOnline ? "Online" : "Offline"}</p>
+                    <p className={`text-[11px] truncate ${isSelected ? "text-indigo-100" : isOnline ? "text-green-500 font-semibold" : "text-gray-400"}`}>
+                      {isOnline ? "Online" : friend.lastSeen ? `Last seen ${format(friend.lastSeen)}` : "Offline"}
+                    </p>
                   </div>
                 </div>
               );
@@ -181,50 +189,36 @@ const Messages = () => {
               <div className="flex items-center gap-3 text-left">
                 <button onClick={() => setSelectedUser(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 sm:hidden"><X size={20} /></button>
                 <div className="relative">
-                  <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold uppercase shadow-inner">{selectedUser.username.charAt(0)}</div>
+                  <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold uppercase shadow-inner">
+                    {selectedUser.username.charAt(0)}
+                  </div>
                   {activeUsers.some(u => u.userId === selectedUser.userId) && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>}
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-800 leading-none">{selectedUser.username}</h3>
                   <span className={`text-[10px] font-bold uppercase tracking-widest ${activeUsers.some(u => u.userId === selectedUser.userId) ? "text-green-500" : "text-gray-400"}`}>
-                    {activeUsers.some(u => u.userId === selectedUser.userId) ? "Active Now" : "Offline"}
+                    {getStatus(selectedUser)}
                   </span>
                 </div>
               </div>
 
-              {/* External Buttons + Menu */}
               <div className="flex items-center gap-1 sm:gap-2">
-                <button title="Voice Call" className="p-2.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-all active:scale-90">
-                  <Phone size={20} />
-                </button>
-                <button title="Video Call" className="p-2.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-all active:scale-90">
-                  <Video size={20} />
-                </button>
-                
+                <button title="Voice Call" className="p-2.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-all active:scale-90"><Phone size={20} /></button>
+                <button title="Video Call" className="p-2.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-all active:scale-90"><Video size={20} /></button>
                 <div className="relative" ref={menuRef}>
-                  <button onClick={() => setShowMenu(!showMenu)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                    <MoreVertical className="text-gray-400" size={20} />
-                  </button>
-
+                  <button onClick={() => setShowMenu(!showMenu)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><MoreVertical className="text-gray-400" size={20} /></button>
                   {showMenu && (
                     <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-2 animate-in fade-in zoom-in duration-150">
-                      <button onClick={handleExportChat} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 flex items-center gap-3">
-                        <Download size={16} className="text-gray-400" /> Export Chat
-                      </button>
-                      <button onClick={handleBlockUser} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 flex items-center gap-3">
-                        <ShieldAlert size={16} className="text-gray-400" /> Block User
-                      </button>
+                      <button onClick={handleExportChat} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 flex items-center gap-3"><Download size={16} className="text-gray-400" /> Export Chat</button>
+                      <button onClick={handleBlockUser} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 flex items-center gap-3"><ShieldAlert size={16} className="text-gray-400" /> Block User</button>
                       <div className="my-1 border-t border-gray-50"></div>
-                      <button onClick={handleClearChat} className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 flex items-center gap-3 font-semibold">
-                        <Trash2 size={16} /> Clear Chat
-                      </button>
+                      <button onClick={handleClearChat} className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 flex items-center gap-3 font-semibold"><Trash2 size={16} /> Clear Chat</button>
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Messages & Input (Same as before...) */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gray-50/30">
               {messages.map((m, i) => {
                 const isMe = m.senderId === currentUser?._id;

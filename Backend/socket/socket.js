@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-
+import User from '../models/userModel.js'
 
 export const initSocket = (server) => {
   const io = new Server(server, {
@@ -43,10 +43,20 @@ export const initSocket = (server) => {
     });
 
 
-    socket.on("disconnect", () => {
-      activeUsers = activeUsers.filter((user) => user.socketId !== socket.id);
+    socket.on("disconnect", async () => {
+
+    const user = activeUsers.find((u) => u.socketId === socket.id);
+  
+    if (user) {
+
+      await User.findByIdAndUpdate(user.userId, { lastSeen: new Date() });
+
+      activeUsers = activeUsers.filter((u) => u.socketId !== socket.id);
+
       io.emit("get-users", activeUsers);
-    });
+    }
+  });
+  
   });
 
   
