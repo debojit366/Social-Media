@@ -23,11 +23,12 @@ const PostCard = ({ post }) => {
   const [preview, setPreview] = useState(post.img);
   const [loading, setLoading] = useState(false);
 
-  // Comment States
+  // Comment & Reply States
   const [showComments, setShowComments] = useState(false);
   const [commentInput, setCommentInput] = useState("");
   const [comments, setComments] = useState([]); 
   const [commentCount, setCommentCount] = useState(post.comments?.length || 0);
+  const [replyingTo, setReplyingTo] = useState(null); 
 
   // Close menu on click outside
   useEffect(() => {
@@ -56,18 +57,24 @@ const PostCard = ({ post }) => {
     }
   }, [showComments, post._id, token]);
 
-  // Handle Comment Submit
+  // Handle Comment & Reply Submit
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
     if (!commentInput.trim()) return;
     try {
       const res = await axios.post(`http://localhost:8080/api/v1/comments`, 
-        { content: commentInput, postId: post._id },
+        { 
+          content: commentInput, 
+          postId: post._id,
+          parentCommentId: replyingTo ? replyingTo._id : null 
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      
       setComments([res.data, ...comments]);
       setCommentCount(prev => prev + 1);
       setCommentInput("");
+      setReplyingTo(null); 
     } catch (err) {
       alert("Failed to post comment");
     }
@@ -88,15 +95,14 @@ const PostCard = ({ post }) => {
     }
   };
 
-  // --- Handle Comment Like (Toggle) ---
+  // --- Handle Comment Like ---
   const handleCommentLike = async (commentId) => {
     try {
-      const res = await axios.put(`http://localhost:8080/api/v1/comments/${commentId}/like`, 
+      await axios.put(`http://localhost:8080/api/v1/comments/${commentId}/like`, 
         {}, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Optimistic Update for UI
       setComments(prev => prev.map(c => {
         if (c._id === commentId) {
           const isLikedByMe = c.likes?.includes(currentUser._id);
@@ -114,7 +120,7 @@ const PostCard = ({ post }) => {
     }
   };
 
-  // Post Actions
+  // Post Actions (Like, Delete, Update)
   const handleLike = async () => {
     try {
       setIsLiked(!isLiked);
@@ -241,72 +247,131 @@ const PostCard = ({ post }) => {
         <div className="bg-gray-50/50 px-5 py-4 border-t border-gray-50 animate-in slide-in-from-top-2 duration-300">
           <h5 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Comments ({commentCount})</h5>
           
-          {/* Add Comment Input */}
-          <form onSubmit={handleCommentSubmit} className="flex gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 flex-shrink-0 flex items-center justify-center font-bold text-indigo-600 border border-white">
-              {currentUser?.username?.charAt(0) || "U"}
-            </div>
-            <div className="relative flex-1">
-              <input 
-                type="text" placeholder="Add a comment..."
-                className="w-full bg-white border border-gray-200 rounded-2xl py-2.5 px-4 pr-12 outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all shadow-sm"
-                value={commentInput} onChange={(e) => setCommentInput(e.target.value)}
-              />
-              <button type="submit" className="absolute right-2 top-1.5 p-1.5 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors">
-                <Send size={18} />
-              </button>
-            </div>
-          </form>
+          {/* Add Comment / Reply Input */}
+          <div className="mb-6">
+            {replyingTo && (
+              <div className="flex justify-between items-center bg-indigo-50 px-4 py-1.5 rounded-t-2xl text-[10px] text-indigo-600 font-bold border-x border-t border-indigo-100">
+                <span className="flex items-center gap-1">
+                  <Send size={10} className="rotate-180" /> Replying to @{replyingTo.user?.username}
+                </span>
+                <button onClick={() => setReplyingTo(null)} className="hover:text-red-500"><X size={12} /></button>
+              </div>
+            )}
+            <form onSubmit={handleCommentSubmit} className={`flex gap-3 ${replyingTo ? "rounded-t-none" : ""}`}>
+              <div className="w-10 h-10 rounded-xl bg-indigo-100 flex-shrink-0 flex items-center justify-center font-bold text-indigo-600 border border-white">
+                {currentUser?.username?.charAt(0) || "U"}
+              </div>
+              <div className="relative flex-1">
+                <input 
+                  type="text" 
+                  placeholder={replyingTo ? `Reply to ${replyingTo.user?.username}...` : "Add a comment..."}
+                  className={`w-full bg-white border border-gray-200 py-2.5 px-4 pr-12 outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all shadow-sm ${replyingTo ? "rounded-b-2xl rounded-tr-none" : "rounded-2xl"}`}
+                  value={commentInput} 
+                  onChange={(e) => setCommentInput(e.target.value)}
+                />
+                <button type="submit" className="absolute right-2 top-1.5 p-1.5 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors">
+                  <Send size={18} />
+                </button>
+              </div>
+            </form>
+          </div>
 
-          {/* Comment List */}
+          {/* Comment List with Nesting Logic */}
           <div className="space-y-4">
-            {comments.length > 0 ? comments.map((c) => {
-              const likedByMe = c.likes?.includes(currentUser?._id);
-              return (
-                <div key={c._id} className="flex gap-3 group">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex-shrink-0 flex items-center justify-center text-xs font-bold uppercase">
-                    {c.user?.username?.charAt(0)}
-                  </div>
-                  <div className="flex-1">
-                    <div className="bg-white p-3 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm relative">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs font-black text-gray-900">{c.user?.username}</span>
-                        <span className="text-[10px] text-gray-400 font-medium">{format(c.createdAt)}</span>
-                      </div>
-                      <p className="text-sm text-gray-700 leading-snug">{c.content}</p>
-
-                      {/* Delete Comment Button */}
-                      {(c.user?._id === currentUser?._id || post.userId?._id === currentUser?._id) && (
-                        <button 
-                          onClick={() => handleCommentDelete(c._id)}
-                          className="absolute -right-2 -top-2 p-1 bg-white border shadow-sm rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X size={12} />
-                        </button>
-                      )}
-                    </div>
+            {comments.length > 0 ? (
+              comments
+                .filter(c => !c.parentCommentId) 
+                .map((mainComment) => (
+                  <div key={mainComment._id} className="space-y-3">
+                    {/* Render Main Comment */}
+                    <SingleComment 
+                      c={mainComment} 
+                      currentUser={currentUser} 
+                      post={post}
+                      handleCommentDelete={handleCommentDelete}
+                      handleCommentLike={handleCommentLike}
+                      setReplyingTo={setReplyingTo}
+                      setCommentInput={setCommentInput}
+                    />
                     
-                    {/* Comment Like Action */}
-                    <div className="flex items-center gap-4 mt-1 ml-2">
-                      <button 
-                        onClick={() => handleCommentLike(c._id)}
-                        className={`flex items-center gap-1 text-[10px] font-bold transition-colors ${likedByMe ? "text-red-500" : "text-gray-400 hover:text-red-400"}`}
-                      >
-                        <Heart size={12} className={likedByMe ? "fill-current" : ""} />
-                        {likedByMe ? "Liked" : "Like"}
-                        {c.likes?.length > 0 && <span className="ml-1 text-gray-500">{c.likes.length}</span>}
-                      </button>
-                      <button className="text-[10px] font-bold text-gray-400 hover:text-indigo-500">Reply</button>
+                    {/* Render its Replies (Indented) */}
+                    <div className="ml-10 space-y-3 border-l-2 border-gray-100 pl-4">
+                      {comments
+                        .filter(reply => reply.parentCommentId === mainComment._id)
+                        .map(reply => (
+                          <SingleComment 
+                            key={reply._id}
+                            c={reply} 
+                            currentUser={currentUser} 
+                            post={post}
+                            handleCommentDelete={handleCommentDelete}
+                            handleCommentLike={handleCommentLike}
+                            setReplyingTo={setReplyingTo}
+                            setCommentInput={setCommentInput}
+                            isReply={true}
+                          />
+                        ))
+                      }
                     </div>
                   </div>
-                </div>
-              );
-            }) : (
+                ))
+            ) : (
               <p className="text-center text-gray-400 text-xs py-4">No comments yet.</p>
             )}
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+const SingleComment = ({ c, currentUser, post, handleCommentDelete, handleCommentLike, setReplyingTo, setCommentInput, isReply }) => {
+  const likedByMe = c.likes?.includes(currentUser?._id);
+  return (
+    <div className="flex gap-3 group">
+      <div className={`rounded-lg bg-indigo-100 text-indigo-600 flex-shrink-0 flex items-center justify-center font-bold uppercase ${isReply ? 'w-7 h-7 text-[10px]' : 'w-8 h-8 text-xs'}`}>
+        {c.user?.username?.charAt(0)}
+      </div>
+      <div className="flex-1">
+        <div className="bg-white p-3 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm relative">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-xs font-black text-gray-900">{c.user?.username}</span>
+            <span className="text-[10px] text-gray-400 font-medium">{format(c.createdAt)}</span>
+          </div>
+          <p className="text-sm text-gray-700 leading-snug">{c.content}</p>
+
+          {(c.user?._id === currentUser?._id || post.userId?._id === currentUser?._id) && (
+            <button 
+              onClick={() => handleCommentDelete(c._id)}
+              className="absolute -right-2 -top-2 p-1 bg-white border shadow-sm rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-4 mt-1 ml-2">
+          <button 
+            onClick={() => handleCommentLike(c._id)}
+            className={`flex items-center gap-1 text-[10px] font-bold transition-colors ${likedByMe ? "text-red-500" : "text-gray-400 hover:text-red-400"}`}
+          >
+            <Heart size={12} className={likedByMe ? "fill-current" : ""} />
+            {c.likes?.length > 0 && <span className="ml-0.5">{c.likes.length}</span>}
+          </button>
+          
+          {!isReply && (
+            <button 
+              onClick={() => {
+                setReplyingTo(c);
+                window.scrollTo({ top: 0, behavior: 'smooth' }); 
+              }}
+              className="text-[10px] font-bold text-gray-400 hover:text-indigo-500"
+            >
+              Reply
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

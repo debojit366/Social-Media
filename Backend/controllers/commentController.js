@@ -3,7 +3,7 @@ import Post from "../models/postModel.js";
 
 export const addComment = async (req, res) => {
   try {
-    const { content, postId } = req.body;
+    const { content, postId, parentCommentId } = req.body;
     
     const post = await Post.findById(postId);
     if (!post) return res.status(404).json("No Post Found");
@@ -11,11 +11,11 @@ export const addComment = async (req, res) => {
     const newComment = new Comment({
       content,
       post: postId,
-      user: req.user.id
+      user: req.user.id,
+      parentCommentId: parentCommentId || null 
     });
 
     let savedComment = await newComment.save();
-
 
     savedComment = await savedComment.populate("user", "username profilePicture");
 
@@ -104,20 +104,3 @@ export const toggleCommentLike = async (req, res) => {
 };
 
 
-
-export const createComment = async (req, res) => {
-  try {
-    const { content, postId, parentCommentId } = req.body;
-    const newComment = new Comment({
-      content,
-      postId,
-      userId: req.user.id,
-      parentCommentId: parentCommentId || null 
-    });
-    const savedComment = await newComment.save();
-    const populatedComment = await savedComment.populate("userId", "username profilePicture");
-    res.status(201).json(populatedComment);
-  } catch (err) {
-    res.status(500).json(err);
-  }
-};
