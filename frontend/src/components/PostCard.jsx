@@ -30,7 +30,7 @@ const PostCard = ({ post }) => {
   const [commentCount, setCommentCount] = useState(post.comments?.length || 0);
   const [replyingTo, setReplyingTo] = useState(null); 
 
-  // Close menu on click outside
+  // Close Post Menu on click outside
   useEffect(() => {
     const handler = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) setShowOptions(false);
@@ -95,7 +95,7 @@ const PostCard = ({ post }) => {
     }
   };
 
-  // --- Handle Comment Like ---
+  // Handle Comment Like
   const handleCommentLike = async (commentId) => {
     try {
       await axios.put(`http://localhost:8080/api/v1/comments/${commentId}/like`, 
@@ -120,7 +120,7 @@ const PostCard = ({ post }) => {
     }
   };
 
-  // Post Actions (Like, Delete, Update)
+  // Post Actions
   const handleLike = async () => {
     try {
       setIsLiked(!isLiked);
@@ -175,7 +175,7 @@ const PostCard = ({ post }) => {
         </div>
 
         <div className="relative" ref={menuRef}>
-          <button onClick={() => setShowOptions(!showOptions)} className="p-2 rounded-xl text-gray-400 hover:bg-gray-50">
+          <button onClick={() => setShowOptions(!showOptions)} className="p-2 rounded-xl text-gray-400 hover:bg-gray-50 transition-colors">
             <MoreHorizontal size={20} />
           </button>
           {showOptions && (
@@ -283,7 +283,6 @@ const PostCard = ({ post }) => {
                 .filter(c => !c.parentCommentId) 
                 .map((mainComment) => (
                   <div key={mainComment._id} className="space-y-3">
-                    {/* Render Main Comment */}
                     <SingleComment 
                       c={mainComment} 
                       currentUser={currentUser} 
@@ -291,10 +290,9 @@ const PostCard = ({ post }) => {
                       handleCommentDelete={handleCommentDelete}
                       handleCommentLike={handleCommentLike}
                       setReplyingTo={setReplyingTo}
-                      setCommentInput={setCommentInput}
                     />
                     
-                    {/* Render its Replies (Indented) */}
+                    {/* Render its Replies */}
                     <div className="ml-10 space-y-3 border-l-2 border-gray-100 pl-4">
                       {comments
                         .filter(reply => reply.parentCommentId === mainComment._id)
@@ -307,7 +305,6 @@ const PostCard = ({ post }) => {
                             handleCommentDelete={handleCommentDelete}
                             handleCommentLike={handleCommentLike}
                             setReplyingTo={setReplyingTo}
-                            setCommentInput={setCommentInput}
                             isReply={true}
                           />
                         ))
@@ -325,29 +322,68 @@ const PostCard = ({ post }) => {
   );
 };
 
-const SingleComment = ({ c, currentUser, post, handleCommentDelete, handleCommentLike, setReplyingTo, setCommentInput, isReply }) => {
+// Sub-component for a single comment/reply with Options Menu
+const SingleComment = ({ c, currentUser, post, handleCommentDelete, handleCommentLike, setReplyingTo, isReply }) => {
+  const [showCommentMenu, setShowCommentMenu] = useState(false);
+  const commentMenuRef = useRef();
   const likedByMe = c.likes?.includes(currentUser?._id);
+
+  // Close comment menu on outside click
+  useEffect(() => {
+    const closeMenu = (e) => {
+      if (commentMenuRef.current && !commentMenuRef.current.contains(e.target)) {
+        setShowCommentMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", closeMenu);
+    return () => document.removeEventListener("mousedown", closeMenu);
+  }, []);
+
   return (
-    <div className="flex gap-3 group">
+    <div className="flex gap-3 group relative">
       <div className={`rounded-lg bg-indigo-100 text-indigo-600 flex-shrink-0 flex items-center justify-center font-bold uppercase ${isReply ? 'w-7 h-7 text-[10px]' : 'w-8 h-8 text-xs'}`}>
         {c.user?.username?.charAt(0)}
       </div>
+      
       <div className="flex-1">
         <div className="bg-white p-3 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm relative">
           <div className="flex justify-between items-center mb-1">
             <span className="text-xs font-black text-gray-900">{c.user?.username}</span>
-            <span className="text-[10px] text-gray-400 font-medium">{format(c.createdAt)}</span>
-          </div>
-          <p className="text-sm text-gray-700 leading-snug">{c.content}</p>
+            
+            {/* Options Menu for Comment */}
+            {(c.user?._id === currentUser?._id || post.userId?._id === currentUser?._id) && (
+              <div className="relative" ref={commentMenuRef}>
+                <button 
+                  onClick={() => setShowCommentMenu(!showCommentMenu)}
+                  className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <MoreHorizontal size={14} />
+                </button>
 
-          {(c.user?._id === currentUser?._id || post.userId?._id === currentUser?._id) && (
-            <button 
-              onClick={() => handleCommentDelete(c._id)}
-              className="absolute -right-2 -top-2 p-1 bg-white border shadow-sm rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <X size={12} />
-            </button>
-          )}
+                {showCommentMenu && (
+                  <div className="absolute right-0 mt-1 w-28 bg-white border border-gray-100 rounded-xl shadow-lg z-[60] py-1">
+                    {c.user?._id === currentUser?._id && (
+                      <button className="w-full flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold text-gray-600 hover:bg-gray-50 transition-colors">
+                        <Edit3 size={12} /> Edit
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => {
+                        handleCommentDelete(c._id);
+                        setShowCommentMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 size={12} /> Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <p className="text-sm text-gray-700 leading-snug">{c.content}</p>
+          <span className="text-[9px] text-gray-400 font-medium block mt-1">{format(c.createdAt)}</span>
         </div>
         
         <div className="flex items-center gap-4 mt-1 ml-2">
@@ -361,10 +397,7 @@ const SingleComment = ({ c, currentUser, post, handleCommentDelete, handleCommen
           
           {!isReply && (
             <button 
-              onClick={() => {
-                setReplyingTo(c);
-                window.scrollTo({ top: 0, behavior: 'smooth' }); 
-              }}
+              onClick={() => setReplyingTo(c)}
               className="text-[10px] font-bold text-gray-400 hover:text-indigo-500"
             >
               Reply
