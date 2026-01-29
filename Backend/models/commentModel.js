@@ -20,7 +20,11 @@ const commentSchema = new mongoose.Schema({
     { type: mongoose.Schema.Types.ObjectId,
       ref: 'User' }
   ],
-  
+  parentCommentId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Comment', 
+    default: null 
+  }
 }, { timestamps: true });
 
 const Comment = mongoose.model("Comment", commentSchema);

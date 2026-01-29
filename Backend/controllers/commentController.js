@@ -102,3 +102,22 @@ export const toggleCommentLike = async (req, res) => {
     res.status(500).json(error);
   }
 };
+
+
+
+export const createComment = async (req, res) => {
+  try {
+    const { content, postId, parentCommentId } = req.body;
+    const newComment = new Comment({
+      content,
+      postId,
+      userId: req.user.id,
+      parentCommentId: parentCommentId || null 
+    });
+    const savedComment = await newComment.save();
+    const populatedComment = await savedComment.populate("userId", "username profilePicture");
+    res.status(201).json(populatedComment);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+};
