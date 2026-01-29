@@ -77,3 +77,28 @@ export const deleteComment = async (req, res) => {
     res.status(500).json(err.message);
   }
 };
+
+
+
+export const toggleCommentLike = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const userId = req.user.id; 
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) return res.status(404).json({ message: "Comment not found" });
+
+    const isLiked = comment.likes.includes(userId);
+
+    if (isLiked) {
+      comment.likes = comment.likes.filter((id) => id.toString() !== userId);
+    } else {
+      comment.likes.push(userId);
+    }
+
+    await comment.save();
+    res.status(200).json({ likesCount: comment.likes.length, isLiked: !isLiked });
+  } catch (error) {
+    res.status(500).json(error);
+  }
+};

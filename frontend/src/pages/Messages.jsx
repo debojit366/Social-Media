@@ -235,7 +235,7 @@ const Messages = () => {
             </div>
 
             <form onSubmit={handleSend} className="p-4 sm:p-5 border-t flex gap-3 bg-white">
-              <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Aa..." className="flex-1 bg-gray-100 border-none rounded-2xl px-5 py-3 outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all shadow-inner" />
+              <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type your message here" className="flex-1 bg-gray-100 border-none rounded-2xl px-5 py-3 outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all shadow-inner" />
               <button type="submit" disabled={!newMessage.trim()} className="bg-indigo-600 text-white p-3.5 rounded-2xl shadow-lg hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"><Send size={18} /></button>
             </form>
           </>
