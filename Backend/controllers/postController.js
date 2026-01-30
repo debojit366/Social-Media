@@ -1,4 +1,5 @@
 import Post from "../models/postModel.js";
+import Notification from "../models/notificationModel.js";
 import User from "../models/userModel.js";
 import { handleUpload, deleteFromCloudinary } from "../config/cloudinary.js";
 import fs from "fs";
@@ -131,6 +132,8 @@ const getPost = async (req, res, next) => {
 @desc    Like a post
 @route   GET /api/v1/posts/:id/like
 */
+
+
 const likePost = async (req, res, next) => {
   try {
     const post = await Post.findById(req.params.id);
@@ -139,6 +142,12 @@ const likePost = async (req, res, next) => {
     }
     if (!post.likes.includes(req.user.id)) {
       await post.updateOne({ $push: { likes: req.user.id } });
+      await Notification.create({
+        receiverId: post.userId, 
+        senderId: req.user.id,   
+        type: "like",
+        postId: post._id
+      });
       res.status(200).json("Post has been liked! ❤️");
     } else {
       await post.updateOne({ $pull: { likes: req.user.id } });
@@ -148,6 +157,8 @@ const likePost = async (req, res, next) => {
     next(err);
   }
 };
+
+
 /* 
 @desc    Get user profile posts
 @route   GET /api/v1/posts/user-posts

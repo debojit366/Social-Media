@@ -1,4 +1,5 @@
 import User from "../models/userModel.js";
+import Notification from '../models/notificationModel.js'
 import fs from "fs";
 import {handleUpload,deleteFromCloudinary} from "../config/cloudinary.js";
 
@@ -16,22 +17,42 @@ export const sendFollowRequest = async (req, res, next) => {
 
     if (userToFollow.isPrivate) {
       if (userToFollow.friendRequests.includes(currentUserId)) {
+
         await userToFollow.updateOne({ $pull: { friendRequests: currentUserId } });
+
+        await Notification.findOneAndDelete({ senderId: currentUserId, receiverId: userToFollow._id, type: "follow_request" });
+        
         return res.status(200).json({ message: "Follow request cancelled!", status: "none" });
       } else {
+
         await userToFollow.updateOne({ $push: { friendRequests: currentUserId } });
+        
+
+        await Notification.create({
+          receiverId: userToFollow._id,
+          senderId: currentUserId,
+          type: "follow_request"
+        });
+
         return res.status(200).json({ message: "Follow request sent!", status: "pending" });
       }
-    } 
-    
-    else {
+    } else {
+
       if (userToFollow.followers.includes(currentUserId)) {
         await userToFollow.updateOne({ $pull: { followers: currentUserId } });
         await currentUser.updateOne({ $pull: { followings: req.params.id } });
         return res.status(200).json({ message: "Unfollowed successfully!", status: "unfollowed" });
-      } else {
+      } 
+      else {
         await userToFollow.updateOne({ $push: { followers: currentUserId } });
         await currentUser.updateOne({ $push: { followings: req.params.id } });
+        
+        await Notification.create({
+          receiverId: userToFollow._id,
+          senderId: currentUserId,
+          type: "follow_request" 
+        });
+
         return res.status(200).json({ message: "Started following!", status: "followed" });
       }
     }

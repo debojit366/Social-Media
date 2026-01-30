@@ -3,11 +3,13 @@ import express from "express"
 import connectDB from './config/db.js'
 
 
+
 import authRoutes from './routes/auth.js'
 import postRoutes from './routes/post.js'
 import messageRoutes from "./routes/message.js";
 import userRoutes from './routes/user.js'
 import commentRoute from './routes/comment.js'
+import notificationRoutes from "./routes/notifications.js";
 
 
 
@@ -42,6 +44,9 @@ app.use("/api/v1/posts", postRoutes)
 app.use("/api/v1/users", userRoutes)
 app.use("/api/v1/comments", commentRoute)
 app.use('/api/v1/messages',messageRoutes)
+app.use("/api/v1/notifications", notificationRoutes);
+
+
 
 const PORT = process.env.PORT || 5000
 

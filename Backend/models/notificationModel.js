@@ -1,5 +1,7 @@
 // models/Notification.js
-const mongoose = require("mongoose");
+import mongoose
+
+from "mongoose";
 const NotificationSchema = new mongoose.Schema({
   receiverId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   senderId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -13,4 +15,5 @@ const NotificationSchema = new mongoose.Schema({
   read: { type: Boolean, default: false },
 }, { timestamps: true });
 
-module.exports = mongoose.model("Notification", NotificationSchema);
+const Notification = mongoose.model("Notification", NotificationSchema);
+export default Notification

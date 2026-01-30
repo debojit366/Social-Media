@@ -1,6 +1,6 @@
 import Comment from "../models/commentModel.js";
 import Post from "../models/postModel.js";
-
+import Notification from "../models/notificationModel.js";
 export const addComment = async (req, res) => {
   try {
     const { content, postId, parentCommentId } = req.body;
@@ -22,7 +22,13 @@ export const addComment = async (req, res) => {
     await Post.findByIdAndUpdate(postId, {
       $push: { comments: savedComment._id } 
     });
-
+    await Notification.create({
+        receiverId: post.userId,
+        senderId: req.user.id,
+        type: "comment",
+        postId: post._id,
+        commentText: req.body.text
+    });
     res.status(201).json(savedComment);
   } catch (err) {
     res.status(500).json(err.message);
