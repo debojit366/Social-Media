@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
-import { MapPin, Calendar, Edit3, Image as ImageIcon, Send, X, Lock } from 'lucide-react';
+import { MapPin, Calendar, Edit3, Image as ImageIcon, Send, X, Lock, Users } from 'lucide-react';
 import PostCard from '../components/PostCard';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -26,36 +26,35 @@ const Profile = () => {
   const config = {
     headers: { 'Authorization': `Bearer ${token}` }
   };
+
   const handleFollowToggle = async () => {
-  try {
-    const res = await axios.patch(`http://localhost:8080/api/v1/users/${user._id}/request`, {}, config);
-    
-    
-    fetchProfileData(false); 
-    
-  } catch (err) {
-    console.log("Follow error:", err);
-  }
-};
+    try {
+      await axios.patch(`http://localhost:8080/api/v1/users/${user._id}/request`, {}, config);
+      fetchProfileData(false); 
+    } catch (err) {
+      console.log("Follow error:", err);
+    }
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
     fetchProfileData();
   }, [id]);
 
-const fetchProfileData = async (showLoading = true) => {
-  if (showLoading) setLoading(true);
-  
-  try {
-    const userRes = await axios.get(`http://localhost:8080/api/v1/users/find/${targetId}`, config);
-    setUser(userRes.data);
+  const fetchProfileData = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
+    
+    try {
+      const userRes = await axios.get(`http://localhost:8080/api/v1/users/find/${targetId}`, config);
+      setUser(userRes.data);
 
-    const postsRes = await axios.get(`http://localhost:8080/api/v1/posts/user-posts/${targetId}`, config);
-    setUserPosts(postsRes.data);
-  } catch (err) {
-    console.log("Error fetching profile data", err);
-  }
-  setLoading(false);
-};
+      const postsRes = await axios.get(`http://localhost:8080/api/v1/posts/user-posts/${targetId}`, config);
+      setUserPosts(postsRes.data);
+    } catch (err) {
+      console.log("Error fetching profile data", err);
+    }
+    setLoading(false);
+  };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -114,6 +113,18 @@ const fetchProfileData = async (showLoading = true) => {
               <div>
                 <h1 className="text-3xl font-black text-gray-900">{user.firstName} {user.lastName}</h1>
                 <p className="text-gray-400 font-medium">@{user.username}</p>
+                
+                {/* Stats in Header */}
+                <div className="flex gap-6 mt-4">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-black text-gray-900">{user.followers?.length || 0}</span>
+                    <span className="text-gray-500 text-sm font-medium">Followers</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-black text-gray-900">{user.followings?.length || 0}</span>
+                    <span className="text-gray-500 text-sm font-medium">Following</span>
+                  </div>
+                </div>
               </div>
               
               {/* Button Toggle: Edit Profile vs Follow */}
@@ -141,13 +152,27 @@ const fetchProfileData = async (showLoading = true) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* About Section */}
+          {/* Left Sidebar Section */}
           <div className="md:col-span-1 space-y-6">
             <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-white">
-              <h3 className="font-black text-gray-900 mb-4">About</h3>
-              <p className="text-gray-500 text-sm leading-relaxed font-medium">
+              <h3 className="font-black text-gray-900 mb-4 flex items-center gap-2">
+                <Users size={18} className="text-indigo-500" /> About
+              </h3>
+              <p className="text-gray-500 text-sm leading-relaxed font-medium mb-6">
                 {user.bio ? user.bio : "No bio available."}
               </p>
+              
+              {/* Stats Box */}
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50 text-center">
+                <div>
+                  <p className="text-lg font-black text-indigo-600">{user.followers?.length || 0}</p>
+                  <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Followers</p>
+                </div>
+                <div>
+                  <p className="text-lg font-black text-indigo-600">{user.followings?.length || 0}</p>
+                  <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Following</p>
+                </div>
+              </div>
             </div>
           </div>
 
