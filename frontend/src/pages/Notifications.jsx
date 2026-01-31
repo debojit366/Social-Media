@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Bell, Heart, UserPlus, MessageCircle, Trash2, CheckCircle2 } from 'lucide-react';
+import { Bell, Heart, UserPlus, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 const Notifications = () => {
@@ -12,13 +12,12 @@ const Notifications = () => {
 
   useEffect(() => {
     fetchNotifications();
-    markAsRead(); // Mark them as read when the user opens the page
+    markAsRead();
   }, []);
 
   const fetchNotifications = async () => {
     try {
       const res = await axios.get("http://localhost:8080/api/v1/notifications", config);
-      // FIXED: Changed setPosts to setNotifications
       setNotifications(res.data); 
     } catch (err) {
       console.log("Error fetching notifications", err);
@@ -60,12 +59,6 @@ const Notifications = () => {
               <p className="text-gray-400 text-sm font-medium">Stay updated with your circle</p>
             </div>
           </div>
-          <button 
-            onClick={markAsRead}
-            className="text-xs font-bold text-indigo-600 hover:bg-indigo-50 px-4 py-2 rounded-xl transition-all"
-          >
-            Mark all as read
-          </button>
         </div>
 
         {/* Notifications List */}
@@ -78,19 +71,26 @@ const Notifications = () => {
               return (
                 <div 
                   key={noti._id} 
-                  className={`group flex items-center justify-between p-4 rounded-[2rem] border transition-all cursor-pointer ${
+                  className={`flex items-center justify-between p-4 rounded-[2rem] border transition-all ${
                     noti.read ? 'bg-white border-transparent' : 'bg-indigo-50/30 border-indigo-100 shadow-sm'
                   } hover:shadow-md hover:border-indigo-200`}
                 >
                   <div className="flex items-center gap-4">
-                    {/* User Avatar */}
+                    {/* User Avatar Logic */}
                     <div className="relative">
-                      <img 
-                        src={noti.senderId?.profilePicture || "https://via.placeholder.com/150"} 
-                        className="w-12 h-12 rounded-2xl object-cover shadow-sm"
-                        alt="user"
-                      />
-                      <div className="absolute -bottom-1 -right-1 p-1 bg-white rounded-lg shadow-sm">
+                      {noti.senderId?.profilePicture ? (
+                        <img 
+                          src={noti.senderId.profilePicture} 
+                          alt="pfp" 
+                          className="w-11 h-11 rounded-2xl object-cover shadow-sm" 
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold uppercase border border-indigo-200 shadow-sm">
+                          {noti.senderId?.firstName?.charAt(0) || noti.senderId?.username?.charAt(0) || "?"}
+                        </div>
+                      )}
+                      {/* Floating Icon Mini-Badge */}
+                      <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-lg shadow-sm border border-gray-50">
                         {icon}
                       </div>
                     </div>
@@ -109,11 +109,6 @@ const Notifications = () => {
                       </p>
                     </div>
                   </div>
-
-                  {/* Delete Button */}
-                  <button className="opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-red-500 transition-all">
-                    <Trash2 size={18} />
-                  </button>
                 </div>
               )
             })
