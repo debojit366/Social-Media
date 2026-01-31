@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, 
@@ -9,14 +9,62 @@ import {
   Bell,
   Settings
 } from 'lucide-react';
+import axios from 'axios';
+import { io } from 'socket.io-client';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
+  const [totalUnread, setTotalUnread] = useState(0);
 
   const profileData = localStorage.getItem("profile");
   const currentUser = profileData ? JSON.parse(profileData) : null;
+  const token = localStorage.getItem("token");
+
+  // --- Logic: Fetch Total Unread Count ---
+  const fetchCount = async () => {
+    try {
+      if (!token || !currentUser) return;
+      const res = await axios.get(`http://localhost:8080/api/v1/messages/unread/count`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const total = res.data.reduce((sum, item) => sum + item.count, 0);
+      setTotalUnread(total);
+    } catch (err) {
+      console.error("Navbar Error:", err.response?.data || err.message);
+    }
+  };
+
+  useEffect(() => {
+    if (!currentUser?._id) return;
+
+    // 1. Initial Fetch
+    fetchCount();
+
+    // 2. Socket Setup for Real-time Update
+    const socket = io("http://localhost:8080");
+    socket.emit("new-user-add", currentUser._id);
+
+
+    socket.on("receive-message", () => {
+      fetchCount(); 
+    });
+
+
+    window.addEventListener("refreshUnreadCount", fetchCount);
+
+    return () => {
+      socket.disconnect();
+      window.removeEventListener("refreshUnreadCount", fetchCount);
+    };
+  }, [currentUser?._id]);
+
+
+  useEffect(() => {
+    fetchCount();
+  }, [location.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("profile");
@@ -68,10 +116,15 @@ const Navbar = () => {
             <Home size={24} />
           </NavLink>
 
+          {/* MESSAGES ICON WITH 100+ LOGIC */}
           <NavLink to="/messages" className={navBtnClass} title="Messages">
-            <div className="relative">
+            <div className="relative flex items-center justify-center">
               <MessageCircle size={24} />
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+              {totalUnread > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+                  {totalUnread > 99 ? '99+' : totalUnread}
+                </span>
+              )}
             </div>
           </NavLink>
 
@@ -79,14 +132,13 @@ const Navbar = () => {
             <Bell size={24} />
           </NavLink>
 
-          {/* SETTINGS BUTTON */}
           <NavLink to="/settings" className={navBtnClass} title="Settings">
             <Settings size={24} />
           </NavLink>
 
           <div className="w-[1px] h-8 bg-gray-100 mx-2 hidden sm:block"></div>
 
-          {/* USER PROFILE & LOGOUT */}
+          {/* USER PROFILE */}
           <div className="flex items-center gap-3">
             <NavLink 
               to={`/profile/${currentUser?._id}`} 
@@ -103,9 +155,7 @@ const Navbar = () => {
                   <User size={20} />
                 )}
               </div>
-              <span className={`text-sm font-bold hidden lg:block uppercase tracking-tight ${
-                location.pathname.includes('/profile') ? 'text-indigo-600' : 'text-gray-700'
-              }`}>
+              <span className="text-sm font-bold hidden lg:block uppercase tracking-tight text-gray-700">
                 {currentUser?.firstName || "Profile"}
               </span>
             </NavLink>
@@ -113,12 +163,10 @@ const Navbar = () => {
             <button 
               onClick={handleLogout}
               className="p-2.5 rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all active:scale-90"
-              title="Logout"
             >
               <LogOut size={22} />
             </button>
           </div>
-
         </div>
       </div>
     </nav>
