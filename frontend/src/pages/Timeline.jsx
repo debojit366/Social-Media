@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Image as ImageIcon, Flame, UserPlus, Send, X, Loader2 } from 'lucide-react';
+import { Image as ImageIcon, Send, X, Loader2 } from 'lucide-react';
 import PostCard from '../components/PostCard';
 
 const Timeline = () => {
@@ -13,7 +13,7 @@ const Timeline = () => {
   const [newPost, setNewPost] = useState("");
   const [postImage, setPostImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const [isExpanded, setIsExpanded] = useState(false); // To handle expansion
+  const [isExpanded, setIsExpanded] = useState(false); 
   const postImageRef = useRef(null);
 
   const navigate = useNavigate();
@@ -68,12 +68,12 @@ const Timeline = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] pt-24 pb-10 px-4">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-10 gap-8">
+      {/* Max-width reduced to 3xl for better readability without the sidebar */}
+      <div className="max-w-3xl mx-auto"> 
         
-        {/* CENTER: FEED */}
-        <div className="col-span-1 lg:col-span-7 space-y-6">
+        <div className="space-y-6">
           
-          {/* POST CREATE SECTION - Look maintained, Functionality like Profile */}
+          {/* POST CREATE SECTION */}
           <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-white transition-all duration-300">
             <div className="flex gap-4 items-start">
               <div className="w-12 h-12 rounded-xl bg-indigo-100 flex-shrink-0 overflow-hidden hidden sm:flex items-center justify-center font-bold text-indigo-600">
@@ -106,7 +106,7 @@ const Timeline = () => {
                   )}
                 </div>
 
-                {/* Expanded Controls (Profile Page Like) */}
+                {/* Expanded Controls */}
                 {isExpanded && (
                   <div className="mt-4 animate-in fade-in slide-in-from-top-2">
                     {imagePreview && (
@@ -160,31 +160,9 @@ const Timeline = () => {
           </div>
         </div>
 
-        {/* RIGHT SIDE: TRENDING */}
-        <div className="hidden lg:block lg:col-span-3 space-y-6">
-          <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-white sticky top-24">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="p-2 bg-orange-50 rounded-lg"><Flame className="text-orange-500" size={20} /></div>
-              <h3 className="font-black text-gray-900">Trending Now</h3>
-            </div>
-            <div className="space-y-5">
-              <TrendItem tag="#MERNStack" posts="1.2k" />
-              <TrendItem tag="#Connectify" posts="850" />
-              <TrendItem tag="#ReactJS" posts="2.4k" />
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
   );
 };
-
-const TrendItem = ({ tag, posts }) => (
-  <div className="cursor-pointer group">
-    <p className="font-bold text-gray-800 group-hover:text-indigo-600 transition-colors mb-0.5">{tag}</p>
-    <p className="text-[10px] text-gray-400 font-black uppercase tracking-wider">{posts} Posts</p>
-  </div>
-);
 
 export default Timeline;
