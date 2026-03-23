@@ -3,7 +3,7 @@ import {
   sendFollowRequest, 
   acceptFollowRequest, 
   rejectFollowRequest,
-  getPendingRequests,getUserProfile,updateUser,searchUsers,getMutualFriends
+  getPendingRequests,getUserProfile,updateUser,searchUsers,getMutualFriends,updatePrivacy
 } from "../controllers/userController.js";
 import verifyToken from "../middleware/verifyToken.js";
 import {upload} from "../config/cloudinary.js";
@@ -25,4 +25,5 @@ router.patch("/:id/accept", verifyToken, acceptFollowRequest);
 router.patch("/:id/reject", verifyToken, rejectFollowRequest);
 router.get("/find/:id",verifyToken,getUserProfile);
 router.get("/chat-list",verifyToken,getMutualFriends);
+router.patch("/update-privacy", verifyToken, updatePrivacy);
 export default router;

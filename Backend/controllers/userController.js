@@ -263,3 +263,15 @@ export const getMutualFriends = async (req, res) => {
 };
 
 
+// controllers/userController.js
+export const updatePrivacy = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    user.isPrivate = !user.isPrivate; // Toggle logic
+    await user.save();
+    res.status(200).json({ message: "Privacy updated", isPrivate: user.isPrivate });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+};
+
